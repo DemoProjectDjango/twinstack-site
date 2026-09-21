@@ -1,0 +1,96 @@
+{
+  "name": "TwinStack Solutions",
+  "shortName": "TwinStack",
+  "url": "https://twinstack.net",
+  "tagline": "Premier Salesforce PDO Partner",
+  "description": "TwinStack Solutions is a Salesforce Product Development Outsourcer. We architect, build and pass Security Review for B2B ISV partners launching on the AppExchange.",
+  "language": "en",
+  "locale": "en_US",
+  "foundedYear": 2018,
+  "themeColor": "#0B1A2E",
+  "brand": {
+    "logoText": "TwinStack",
+    "logoMark": "/assets/img/twinstack-mark.svg",
+    "defaultOgImage": "/assets/img/og-default.svg"
+  },
+  "contact": {
+    "email": "info@twinstack.net",
+    "whatsapp": "+880 1556-777043",
+    "whatsappUrl": "https://wa.me/8801556777043",
+    "bookingUrl": "https://calendar.app.google/HP3LiuNFisCt6xLo6",
+    "bookingLabel": "Book a free 30-minute call",
+    "responseTime": "We reply within one business day."
+  },
+  "social": {
+    "linkedin": "https://www.linkedin.com/company/twinforce-solutions",
+    "youtube": "https://www.youtube.com/@TwinStackSolutions-sf",
+    "appexchange": "https://appexchange.salesforce.com/appxConsultingListingDetail?listingId=a0NHu00000ozjVfMAI"
+  },
+  "collections": {
+    "pages": {
+      "dir": "content/pages",
+      "urlPattern": "/:slug/",
+      "layout": "page",
+      "sort": "order"
+    },
+    "products": {
+      "dir": "content/products",
+      "urlPattern": "/products/:slug/",
+      "layout": "product",
+      "sort": "order",
+      "index": {
+        "label": "Products",
+        "url": "/products/"
+      }
+    },
+    "services": {
+      "dir": "content/services",
+      "urlPattern": "/services/:slug/",
+      "layout": "service",
+      "sort": "order",
+      "index": {
+        "label": "Services",
+        "url": "/services/"
+      }
+    },
+    "blog": {
+      "dir": "content/blog",
+      "urlPattern": "/blog/:slug/",
+      "layout": "post",
+      "sort": "date:desc",
+      "index": {
+        "label": "Blog",
+        "url": "/blog/"
+      }
+    },
+    "caseStudies": {
+      "dir": "content/case-studies",
+      "urlPattern": "/case-studies/:slug/",
+      "layout": "case-study",
+      "sort": "order",
+      "index": {
+        "label": "Case studies",
+        "url": "/case-studies/"
+      }
+    }
+  },
+  "deploy": {
+    "provider": "github-pages",
+    "cname": "twinstack.net",
+    "branch": "main",
+    "outputDir": "dist"
+  },
+  "automation": {
+    "model": "claude-sonnet-4-6",
+    "postsPerRun": 1,
+    "publishDay": "Tuesday",
+    "publishTimeUtc": "07:00",
+    "defaultAuthor": "TwinStack Team",
+    "wordCount": [
+      900,
+      1400
+    ],
+    "requireReview": true,
+    "queueFile": "content/data/blog-queue.json"
+  }
+}

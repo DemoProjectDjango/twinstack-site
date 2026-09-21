@@ -1,0 +1,6 @@
+dist/
+node_modules/
+assets/css/main.css
+.env
+.DS_Store
+*.log

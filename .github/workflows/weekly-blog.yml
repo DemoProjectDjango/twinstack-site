@@ -1,0 +1,70 @@
+name: Weekly blog post
+
+on:
+  schedule:
+    # 07:00 UTC every Tuesday. Change here and in site.config.json -> automation.
+    - cron: "0 7 * * 2"
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Override the queue with a one-off topic"
+        required: false
+      research:
+        description: "Let Claude web-search before writing"
+        type: boolean
+        default: false
+      publish:
+        description: "Publish immediately instead of opening a review PR"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install build dependencies
+        run: npm ci
+
+      - name: Generate the post
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          node scripts/generate-post.js \
+            ${{ inputs.topic && format('--topic="{0}"', inputs.topic) || '' }} \
+            ${{ inputs.research && '--research' || '' }} \
+            ${{ inputs.publish && '--publish' || '' }}
+
+      - name: Build and validate
+        run: |
+          node scripts/build.js --drafts
+          node scripts/check.js
+
+      - name: Open a review pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: blog/auto-${{ github.run_number }}
+          title: "New blog post for review"
+          commit-message: "Add generated blog post"
+          body: |
+            Written by the weekly scheduler.
+
+            Before merging, check:
+            - [ ] Every factual claim is one we would stand behind
+            - [ ] No invented statistics, customer names or release numbers
+            - [ ] Links point where they should
+            - [ ] Title and description read well in a search result
+            - [ ] Remove `draft: true` from the frontmatter to publish
+          add-paths: |
+            content/blog/**
+            content/data/blog-queue.json

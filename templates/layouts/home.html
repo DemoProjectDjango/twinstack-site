@@ -1,0 +1,99 @@
+<section class="bg-gradient-to-b from-[#f7fafd] to-white pt-24 pb-18">
+  <div class="wrap grid items-start gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+    <div>
+      <span class="mb-2 block font-display text-sm font-semibold text-brand">{{ site.tagline }}</span>
+      <h1 class="text-hero">{{ page.heroHeading }}</h1>
+      <p class="mt-5 mb-8 max-w-[54ch] text-lede text-ink-2">{{ page.heroText }}</p>
+      <div class="flex flex-wrap gap-3.5">
+        <a class="btn btn-primary" href="{{ site.contact.bookingUrl }}" target="_blank" rel="noopener">{{ site.contact.bookingLabel }}</a>
+        <a class="btn btn-ghost" href="/products/">See our AppExchange apps</a>
+      </div>
+      <ul class="mt-8 flex flex-wrap gap-2">
+        {{# each data.company.clouds }}
+        <li class="rounded-full border border-line bg-white px-3 py-1 text-[0.87rem] text-ink-2">{{ this }}</li>
+        {{/ each }}
+      </ul>
+    </div>
+
+    <div class="rail" aria-label="The route from idea to AppExchange listing">
+      <div class="flex items-center justify-between gap-3.5 border-b border-line bg-mist px-[1.1rem] py-3.5 text-sm font-medium text-ink-2">
+        <span>Idea to listing</span>
+        <span class="badge badge-live badge-dot">Security Review included</span>
+      </div>
+      {{# each data.company.process }}
+      <div class="rail-row">
+        <span class="font-display text-[0.95rem] font-bold text-line-strong">{{ @padded }}</span>
+        <div class="flex-1">
+          <h4 class="text-base">{{ title }}</h4>
+          <p class="mt-0.5 text-[0.9rem] text-muted">{{ body }}</p>
+        </div>
+        {{# if mark }}<span class="text-[0.78rem] font-semibold whitespace-nowrap text-signal">{{ mark }}</span>{{/ if }}
+      </div>
+      {{/ each }}
+    </div>
+  </div>
+</section>
+
+<section class="section-y">
+  <div class="wrap">
+    <div class="mb-12 max-w-[60ch]">
+      <span class="mb-2 block font-display text-sm font-semibold text-brand">Our products</span>
+      <h2 class="text-h2">Native apps, free on the AppExchange</h2>
+      <p class="mt-3.5 text-lede text-muted">Built by the same team that builds for clients. Installed, reviewed and supported by us.</p>
+    </div>
+    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      {{# each products }}{{> card-product }}{{/ each }}
+    </div>
+  </div>
+</section>
+
+<section class="section-y bg-mist">
+  <div class="wrap">
+    <div class="mb-12 max-w-[60ch]">
+      <span class="mb-2 block font-display text-sm font-semibold text-brand">What we do</span>
+      <h2 class="text-h2">Work we take on</h2>
+      <p class="mt-3.5 text-lede text-muted">Product development for ISVs, and the implementation, integration and data work that surrounds it.</p>
+    </div>
+    <div class="grid gap-8 md:grid-cols-2">
+      {{# each services }}{{> card-service }}{{/ each }}
+    </div>
+  </div>
+</section>
+
+<section class="section-y">
+  <div class="wrap">
+    <div class="mb-12 max-w-[60ch]">
+      <span class="mb-2 block font-display text-sm font-semibold text-brand">Selected work</span>
+      <h2 class="text-h2">Case studies</h2>
+    </div>
+    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      {{# each caseStudies }}{{> card-case }}{{/ each }}
+    </div>
+  </div>
+</section>
+
+<section class="section-y bg-ink text-onink">
+  <div class="wrap">
+    <h2 class="mb-12 text-h2 text-white">Eight years inside the ecosystem</h2>
+    {{> stats }}
+  </div>
+</section>
+
+{{> testimonials }}
+
+<section class="section-y border-t border-line">
+  <div class="wrap">
+    <div class="mb-12 max-w-[60ch]">
+      <span class="mb-2 block font-display text-sm font-semibold text-brand">Knowledge hub</span>
+      <h2 class="text-h2">Notes from the team</h2>
+      <p class="mt-3.5 text-lede text-muted">A new post every week on permissions, packaging, integrations and Security Review.</p>
+    </div>
+    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      {{# each latestPosts }}{{> card-post }}{{/ each }}
+    </div>
+    <p class="mt-8"><a href="/blog/" class="font-medium text-brand hover:text-brand-dark">All posts</a></p>
+  </div>
+</section>
+
+{{> faq }}
+{{> cta }}

@@ -1,0 +1,6 @@
+[
+  { "from": "/tsblog.html", "to": "/blog/", "status": 301 },
+  { "from": "/tscs.html", "to": "/case-studies/", "status": 301 },
+  { "from": "/index.html", "to": "/", "status": 301 },
+  { "from": "/products/smart-lookup-dataloader", "to": "/products/smart-lookup-data-loader/", "status": 301 }
+]

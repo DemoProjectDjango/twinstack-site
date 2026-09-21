@@ -1,0 +1,206 @@
+# Tailwind guidelines
+
+How CSS works on this site, and the rules for changing it. Tailwind v4,
+CSS-first configuration, no `tailwind.config.js`.
+
+---
+
+## 1. The setup
+
+| Thing | Where |
+| --- | --- |
+| Source stylesheet (tokens, utilities, components) | `styles/main.css` |
+| Compiled output — **generated, gitignored, never edit** | `assets/css/main.css` |
+| Where classes are scanned from | `templates/`, `content/`, `assets/js/` |
+| Compile step | Runs inside `node scripts/build.js` |
+
+```bash
+npm install          # required once — Tailwind is a build dependency now
+npm run build        # builds pages, then compiles CSS, then copies assets
+npm run dev          # same, watching styles/ templates/ content/
+npm run css          # CSS only, minified
+npm run css:watch    # CSS only, watch mode
+```
+
+The CSS is compiled **after** pages render, because Tailwind reads class names
+out of the templates. If you add a class and it does not appear, rebuild — do
+not reach for `!important`.
+
+Auto-detection is switched off (`@import "tailwindcss" source(none)`) and the
+three source directories are listed explicitly. That stops Tailwind scanning
+`dist/`, which would keep classes alive long after you deleted them.
+
+---
+
+## 2. The decision rule
+
+**Utilities in templates by default. Add to `styles/main.css` only when one of
+these is true:**
+
+1. The pattern repeats in **three or more templates** (`.btn`, `.card`, `.badge`).
+2. The HTML is **generated from markdown**, so it cannot carry classes
+   (`.prose-twinstack`, `.table-scroll`).
+3. It needs CSS that utilities cannot express — pseudo-elements, `::selection`,
+   `<details>` markers, print rules (`.faq summary::after`).
+
+Two occurrences is not a pattern. Duplicated utility strings in two templates
+are cheaper to read and safer to change than a class you have to look up.
+
+Everything currently in the component layer is listed in §5. Keep that list
+short. If it passes fifteen classes, the site is drifting back into a
+hand-written stylesheet with extra steps.
+
+---
+
+## 3. Colour, type and spacing
+
+**Use the brand tokens. Never use stock Tailwind colours.** `slate-700`,
+`blue-500` and `gray-100` are all off-brand, and a review will catch them.
+
+| Token | Utility examples | Use for |
+| --- | --- | --- |
+| `ink` | `text-ink`, `bg-ink` | Headings, dark bands |
+| `ink-2` | `text-ink-2` | Secondary dark text, lede copy |
+| `ink-deep` | `bg-ink-deep` | Footer only |
+| `body` | `text-body` | Body copy (already the default) |
+| `muted` | `text-muted` | Captions, meta, supporting lines |
+| `mist` | `bg-mist` | Tinted section background |
+| `line` / `line-strong` | `border-line` | Hairlines, card borders |
+| `brand` / `brand-dark` / `brand-wash` | `bg-brand`, `text-brand` | Primary action, links, eyebrows |
+| `signal` / `signal-wash` | `text-signal` | Live, free, passed, included |
+| `onink` / `onink-muted` | `text-onink` | Text on dark bands |
+
+Type:
+
+- `font-display` (Archivo) for headings, buttons, numerals, eyebrows.
+- `font-sans` (Public Sans) for everything else. It is the body default, so you
+  rarely write it.
+- Fluid sizes: `text-hero` (h1), `text-h2`, `text-h3`, `text-lede` (intro
+  paragraphs). Body sizes use the stock scale (`text-sm`, `text-base`).
+- Headings already get `font-display`, bold, tight tracking and balanced
+  wrapping from the base layer. Do not restate those on every `<h2>`.
+
+Spacing: stock scale. Two project utilities exist because they appear on nearly
+every section:
+
+- `wrap` — the page gutter and max width. `wrap-narrow` for article headers.
+- `section-y` — the standard vertical rhythm of a full-width band.
+
+Write `<section class="section-y bg-mist"><div class="wrap">…`, not a bespoke
+`py-*` each time.
+
+---
+
+## 4. Conventions
+
+**Class order.** Roughly: layout → box → typography → colour → state →
+responsive. Nobody will fail a review over ordering, but keep responsive and
+state variants at the end where they are easy to scan.
+
+**Responsive.** Mobile first. Add `sm:`, `md:`, `lg:` upward. Use `max-lg:` only
+when a mobile layout genuinely differs from the desktop one rather than scaling
+down — the navigation is the one real case in this codebase.
+
+**Grids.** The site standard is `grid gap-8 sm:grid-cols-2 lg:grid-cols-3` for
+card sets and `md:grid-cols-2` for wider pairs. Match it rather than inventing
+a new rhythm.
+
+**Interactive state goes in data attributes, not JavaScript styling.** The
+mobile nav is `data-open="false"` in HTML, flipped by JS, styled by
+`max-lg:data-[open=false]:hidden`. Never set `style.display` from a script.
+
+**Hover only where it means something.** Cards change border colour, buttons
+change background, links change colour. No lift-on-hover, no shadow transitions.
+
+**Arbitrary values are allowed but should be rare.** `max-w-[54ch]`,
+`text-[0.97rem]` and one boxed shadow are deliberate. If you write a third
+arbitrary value of the same kind, promote it to a token in `@theme`.
+
+**Accessibility floor.** Focus styling comes from the base layer — do not
+remove it with `outline-none` unless you replace it in the same breath. Keep
+`sr-only` skip links working, and keep text on `bg-ink` at `text-onink` or
+lighter.
+
+---
+
+## 5. What is already in the component layer
+
+| Class | Purpose |
+| --- | --- |
+| `.btn` + `.btn-primary` `.btn-ghost` `.btn-light` `.btn-onink` | Every button and call to action |
+| `.badge` + `.badge-live` `.badge-brand` `.badge-dot` | Status pills |
+| `.card` | Product, service, post, case study and generic cards |
+| `.rail` + `.rail-row` | The one elevated element: the lifecycle and at-a-glance panels |
+| `.faq summary` | `<details>` marker, which needs pseudo-elements |
+| `.field-input` | Form inputs, for when a form is added |
+| `.prose-twinstack` + `.prose-wide` | Markdown output |
+| `.table-scroll` | Wide markdown tables |
+| `wrap` / `wrap-narrow` / `section-y` | Project utilities (`@utility`, not components) |
+
+Component classes are built with `@apply` from the same tokens, so changing a
+token updates them too.
+
+---
+
+## 6. Styling markdown
+
+Content files produce HTML nobody writes by hand, so it is styled through the
+typography plugin, wrapped once by the layout:
+
+```html
+<div class="prose-twinstack">{{{ page.content }}}</div>
+<div class="prose-twinstack prose-wide">{{{ page.content }}}</div>   <!-- product/service pages -->
+```
+
+To change how all article text looks, edit the `.prose-twinstack` block in
+`styles/main.css`. Do not add `prose-*` modifiers in templates — that is how
+two pages end up with different body copy.
+
+Inside markdown you can still opt out for one block:
+
+```markdown
+<div class="not-prose">
+  <a class="btn btn-primary" href="/contact/">Talk to us</a>
+</div>
+```
+
+Classes used only inside markdown are still detected, because `content/` is a
+scanned source.
+
+---
+
+## 7. Adding a new page type
+
+1. Create `templates/layouts/<name>.html`.
+2. Build it from existing utilities and the components in §5. Copy the section
+   structure from `service.html` — it is the most complete example.
+3. Only if you invent a genuinely new repeated pattern, add it to the component
+   layer, and say why in a comment.
+4. `npm run check`. It builds, compiles CSS and validates links.
+
+---
+
+## 8. Common mistakes
+
+| Symptom | Cause |
+| --- | --- |
+| A class has no effect | CSS built before the template change, or the class is in a file outside the scanned sources. Rebuild. |
+| A class only works locally | It was added to `assets/css/main.css` by hand. That file is generated and overwritten every build. |
+| Colour looks slightly off | A stock Tailwind colour was used instead of a brand token. |
+| Heading looks wrong on one page | `font-display`, weight or tracking restated on top of the base layer. Remove the overrides. |
+| CSS bundle grows unexpectedly | Something added `dist/` or `node_modules` as a source. Check the `@source` lines. |
+| Build fails with "Tailwind CLI not found" | `npm install` has not been run in this checkout or in CI. |
+
+---
+
+## 9. What changed from the previous setup
+
+The site used to ship a hand-written stylesheet and no dependencies at all.
+Moving to Tailwind adds one real cost: **`npm install` is now required** before
+`node scripts/build.js` will work, locally and in CI. Both GitHub Actions
+workflows run `npm ci` and `package-lock.json` is committed.
+
+In exchange, the design tokens are now enforced rather than remembered: a
+colour that is not in `@theme` is not available as a utility, so drift is much
+harder. The compiled bundle is about 46 kB unminified-equivalent, containing
+only the classes the templates actually use.

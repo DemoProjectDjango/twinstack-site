@@ -1,0 +1,61 @@
+{
+  "_comment": "Edit once, applies to every page. type:'collection' menus rebuild themselves whenever content is added — you never list products or services by hand.",
+
+  "primary": [
+    {
+      "label": "Products",
+      "url": "/products/",
+      "type": "collection",
+      "collection": "products",
+      "limit": 8
+    },
+    {
+      "label": "Services",
+      "url": "/services/",
+      "type": "collection",
+      "collection": "services",
+      "limit": 8
+    },
+    { "label": "Case studies", "url": "/case-studies/" },
+    { "label": "Blog", "url": "/blog/" },
+    { "label": "About", "url": "/about/" }
+  ],
+
+  "cta": { "label": "Contact us", "url": "/contact/" },
+
+  "footer": [
+    {
+      "title": "Products",
+      "links": [{ "type": "collection", "collection": "products", "limit": 6 }]
+    },
+    {
+      "title": "Services",
+      "links": [{ "type": "collection", "collection": "services", "limit": 6 }]
+    },
+    {
+      "title": "Company",
+      "links": [
+        { "label": "About TwinStack", "url": "/about/" },
+        { "label": "Case studies", "url": "/case-studies/" },
+        { "label": "Blog", "url": "/blog/" },
+        { "label": "FAQ", "url": "/faq/" },
+        { "label": "Contact", "url": "/contact/" }
+      ]
+    },
+    {
+      "title": "Elsewhere",
+      "links": [
+        { "label": "AppExchange listing", "url": "https://appexchange.salesforce.com/appxConsultingListingDetail?listingId=a0NHu00000ozjVfMAI" },
+        { "label": "LinkedIn", "url": "https://www.linkedin.com/company/twinforce-solutions" },
+        { "label": "YouTube", "url": "https://www.youtube.com/@TwinStackSolutions-sf" },
+        { "label": "RSS feed", "url": "/rss.xml" }
+      ]
+    }
+  ],
+
+  "legal": [
+    { "label": "Privacy", "url": "/privacy/" },
+    { "label": "Terms", "url": "/terms/" },
+    { "label": "Sitemap", "url": "/sitemap.xml" }
+  ]
+}
