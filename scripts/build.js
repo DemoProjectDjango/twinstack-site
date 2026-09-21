@@ -20,6 +20,18 @@ import { buildCss } from './lib/css.js';
 const args = new Set(process.argv.slice(2));
 const includeDrafts = args.has('--drafts') || args.has('--dev');
 
+// In development the site is often previewed from a server that serves this
+// whole project directory, so dist/ is reachable at /dist rather than at the
+// domain root. Every root-relative href/src gets that prefix; absolute URLs
+// (canonical, og:*, JSON-LD, sitemap, RSS) are untouched since they already
+// point at the real production domain.
+const base = process.env.NODE_ENV === 'development' ? '/dist' : '';
+
+function withBase(html) {
+  if (!base) return html;
+  return html.replace(/((?:href|src)=")\/(?!\/)/g, `$1${base}/`);
+}
+
 /* ------------------------------------------------------------------- helpers */
 
 function loadTemplates(engine) {
@@ -138,7 +150,7 @@ function build() {
     });
 
     const file = outputPathFor(entry.url);
-    write(file, html);
+    write(file, withBase(html));
     written.push({ url: entry.url, file, collection: entry.collection });
 
     if (entry.noindex !== true) {
@@ -214,6 +226,7 @@ function build() {
     console.log(`    ${String(count).padStart(3)}  ${name}`);
   }
   if (includeDrafts) console.log('\n  (drafts and future-dated posts included)');
+  if (base) console.log(`  (NODE_ENV=development — internal links prefixed with ${base})`);
   console.log('');
 
   return { written, model };

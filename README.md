@@ -10,7 +10,11 @@ node scripts/build.js     # build to dist/ (compiles CSS too)
 npm run dev               # preview at http://localhost:4321 with live rebuild
 npm run check             # build, then fail on broken links or duplicate URLs
 npm run new post "Title"  # scaffold new content
+npm run nav:add -- "FAQ" "/faq/"  # add item and update navigation.json
+npm run nav:add -- "Products" "/products/" --collection=products --limit=8
+npm run nav:remove -- "FAQ"  # remove a primary navbar item
 npm run blog:generate     # write the next queued post with Claude
+npm run blog:preview -- --topic="A useful topic" --description="Optional context for the post"
 ```
 
 Node 18 or newer. Tailwind is the only dependency; there is no framework or

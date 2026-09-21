@@ -5,6 +5,7 @@
  *
  *   node scripts/generate-post.js                 next queued topic
  *   node scripts/generate-post.js --topic="..."   ad-hoc topic
+ *   node scripts/generate-post.js --topic="..." --description="..."
  *   node scripts/generate-post.js --research      let Claude web-search first
  *   node scripts/generate-post.js --dry-run       print, write nothing
  *   node scripts/generate-post.js --publish       skip the draft flag
@@ -40,6 +41,7 @@ const model = loadSite({ includeDrafts: true, includeFuture: true });
 /* ---------------------------------------------------------------- the topic */
 
 const adHoc = typeof flag('topic') === 'string' ? flag('topic') : null;
+const suppliedDescription = flag('description');
 const queued = queue.topics.find((t) => t.status === 'queued');
 
 if (!adHoc && !queued) {
@@ -51,8 +53,19 @@ if (!adHoc && !queued) {
 }
 
 const topic = adHoc
-  ? { id: `adhoc-${Date.now()}`, title: adHoc, angle: '', category: 'Admin', tags: [], status: 'adhoc' }
+  ? {
+      id: `adhoc-${Date.now()}`,
+      title: adHoc,
+      description: typeof suppliedDescription === 'string' ? suppliedDescription : queue.defaults.description,
+      angle: '',
+      category: 'Admin',
+      tags: [],
+      status: 'adhoc',
+    }
   : queued;
+const description = typeof suppliedDescription === 'string'
+  ? suppliedDescription
+  : topic.description ?? queue.defaults.description ?? '';
 
 /* --------------------------------------------------------------- the prompt */
 
@@ -114,6 +127,7 @@ Then the body in markdown, using ## for section headings (never # — the title 
 const userPrompt = `Write this week's post.
 
 Working title: ${topic.title}
+Description: ${description}
 Angle: ${topic.angle || 'Choose the most useful practical angle for the audience.'}
 ${topic.notes ? `Notes: ${topic.notes}` : ''}
 

@@ -8,15 +8,17 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "node scripts/build.js",
+    "build": "node --env-file-if-exists=.env scripts/build.js",
     "dev": "node scripts/dev.js",
     "css": "tailwindcss --input styles/main.css --output assets/css/main.css --minify",
     "css:watch": "tailwindcss --input styles/main.css --output assets/css/main.css --watch",
-    "check": "node scripts/build.js && node scripts/check.js",
+    "check": "node --env-file-if-exists=.env scripts/build.js && node --env-file-if-exists=.env scripts/check.js",
     "new": "node scripts/new.js",
-    "blog:generate": "node scripts/generate-post.js",
-    "blog:preview": "node scripts/generate-post.js --dry-run",
-    "blog:publish": "node scripts/generate-post.js --publish"
+    "nav:add": "node scripts/nav.js",
+    "nav:remove": "node scripts/nav-remove.js",
+    "blog:generate": "node --env-file-if-exists=.env scripts/generate-post.js",
+    "blog:preview": "node --env-file-if-exists=.env scripts/generate-post.js --dry-run",
+    "blog:publish": "node --env-file-if-exists=.env scripts/generate-post.js --publish"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",

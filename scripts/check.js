@@ -21,6 +21,14 @@ const { all, site } = loadSite();
 const errors = [];
 const warnings = [];
 
+// Mirrors scripts/build.js: in development every internal href/src is written
+// with a /dist prefix, so links must be stripped back to their real dist/
+// path before checking they resolve to a file that was actually written.
+const base = process.env.NODE_ENV === 'development' ? '/dist' : '';
+function stripBase(href) {
+  return base && href.startsWith(base) ? href.slice(base.length) || '/' : href;
+}
+
 /* Every URL the built site actually serves */
 const served = new Set();
 (function walk(dir, prefix = '') {
@@ -49,8 +57,9 @@ for (const entry of all) {
   const html = fs.readFileSync(file, 'utf8');
 
   for (const [, href] of html.matchAll(linkPattern)) {
-    const target = href.endsWith('/') || path.extname(href) ? href : `${href}/`;
-    if (!served.has(target) && !served.has(href)) {
+    const bare = stripBase(href);
+    const target = bare.endsWith('/') || path.extname(bare) ? bare : `${bare}/`;
+    if (!served.has(target) && !served.has(bare)) {
       errors.push(`${entry.url} links to missing ${href}`);
     }
   }

@@ -3,6 +3,7 @@
   "defaults": {
     "audience": "Salesforce admins, consultants and ISV founders",
     "voice": "Direct, practical, British spelling, no hype, no exclamation marks. Short sentences. Concrete examples from real org work.",
+    "description": "",
     "mustInclude": [
       "One specific, checkable example or short walkthrough",
       "A closing section that links to a relevant TwinStack product or service",
