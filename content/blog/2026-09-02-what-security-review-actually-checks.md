@@ -4,7 +4,7 @@ date: 2026-09-02
 category: ISV
 author: TwinStack Team
 tags: [security review, isv, appexchange]
-relatedProduct: /services/security-review/
+relatedProduct: /services/security-review.html
 description: Salesforce Security Review tests a predictable set of categories. Here is what reviewers look for, which findings recur most, and why packages often fail twice.
 excerpt: Security Review has a reputation for unpredictability it does not deserve. The categories are stable, and most failures come from four of them.
 ---
@@ -53,4 +53,4 @@ Four to eight weeks from submission to outcome, depending on queue length and ho
 
 Nothing about the queue is in your control. Everything about being ready for it is, and the difference between a prepared package and an unprepared one is usually a full quarter.
 
-If you would rather not run this yourself, [Security Review preparation](/services/security-review/) is one of the things we do, including for packages that have already come back once.
+If you would rather not run this yourself, [Security Review preparation](/services/security-review.html) is one of the things we do, including for packages that have already come back once.

@@ -22,7 +22,7 @@
         "security",
         "admin"
       ],
-      "linkTo": "/products/who-sees-what/"
+      "linkTo": "/products/who-sees-what.html"
     },
     {
       "id": "t-002",
@@ -35,7 +35,7 @@
         "isv",
         "appexchange"
       ],
-      "linkTo": "/services/security-review/"
+      "linkTo": "/services/security-review.html"
     },
     {
       "id": "t-003",
@@ -47,7 +47,7 @@
         "data loading",
         "integration"
       ],
-      "linkTo": "/products/smart-lookup-data-loader/"
+      "linkTo": "/products/smart-lookup-data-loader.html"
     },
     {
       "id": "t-004",
@@ -59,7 +59,7 @@
         "migration",
         "data quality"
       ],
-      "linkTo": "/services/data-migration/"
+      "linkTo": "/services/data-migration.html"
     },
     {
       "id": "t-005",
@@ -71,7 +71,7 @@
         "apex",
         "architecture"
       ],
-      "linkTo": "/services/appexchange-product-development/"
+      "linkTo": "/services/appexchange-product-development.html"
     },
     {
       "id": "t-006",
@@ -83,7 +83,7 @@
         "permissions",
         "compliance"
       ],
-      "linkTo": "/products/who-sees-what/"
+      "linkTo": "/products/who-sees-what.html"
     },
     {
       "id": "t-007",
@@ -95,7 +95,7 @@
         "integration",
         "forms"
       ],
-      "linkTo": "/products/google-form-auto-sync/"
+      "linkTo": "/products/google-form-auto-sync.html"
     },
     {
       "id": "t-008",
@@ -107,7 +107,7 @@
         "isv",
         "product"
       ],
-      "linkTo": "/services/appexchange-product-development/"
+      "linkTo": "/services/appexchange-product-development.html"
     }
   ]
 }

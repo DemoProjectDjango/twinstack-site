@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Working on this repository
 
 Instructions for Claude (or any agent) asked to change this site.
@@ -22,6 +26,69 @@ assets/              compiled CSS, JS, images — copied to dist/assets
 scripts/             build, dev server, checker, scaffolder, blog writer
 dist/                generated output; never edit, never commit
 ```
+
+## Commands
+
+```bash
+npm install                    # once — Tailwind is the only dependency
+npm run build                  # build to dist/ (compiles CSS too)
+npm run dev                    # preview at http://localhost:4321; rebuilds on change, drafts visible
+npm run check                  # build, then fail on broken internal links or duplicate URLs
+npm run css / npm run css:watch   # compile styles/main.css -> assets/css/main.css directly
+npm run new <type> "Title"     # scaffold a product, service, page, post or case study
+npm run nav:add -- "Label" "/url/" [--collection=name --limit=n]
+npm run nav:remove -- "Label"
+npm run blog:preview           # generate the next queued post with Claude, print only
+npm run blog:generate          # generate and write it as a draft
+npm run blog:publish           # generate and mark it published
+```
+
+There is no separate lint or test suite — `npm run check` (build + link/URL/SEO
+validation) is the correctness gate. There is no way to build or check a single
+page; both always run over the whole site.
+
+## Architecture
+
+`scripts/build.js` drives everything, using `scripts/lib/`:
+
+1. `lib/content.js` loads `site.config.json`, every file under `content/data/`,
+   and every markdown file in each collection directory named in
+   `site.config.json` → `collections` (frontmatter + body), producing one
+   `model` with `site`, `data`, `collections`, `nav`, `all` (every page) and
+   `byUrl`.
+2. `lib/template.js` is a tiny dependency-free logic-light engine (`{{ value }}`,
+   `{{{ raw }}}`, `{{#if}}`/`{{#unless}}`, `{{#each}}`, `{{> partial}}`). Name
+   lookup walks the whole context stack, so a partial or `{{#each}}` block
+   reaches `site`/`nav`/`page` without prop drilling. Every
+   `templates/partials/*.html` is registered by filename; every
+   `templates/layouts/*.html` is registered as `layout:<name>`.
+3. Per page: the markdown body is rendered as a template first — this is what
+   makes `{{ site.contact.email }}` and `{{> stats }}` work inside content
+   files — then through `lib/markdown.js`, then through the layout named in
+   frontmatter, then wrapped in `templates/partials/base.html` together with
+   JSON-LD from `lib/schema.js`.
+4. After all pages are written, `build.js` generates `sitemap.xml`, `rss.xml`,
+   `robots.txt`, `search-index.json` and `_redirects` (from
+   `content/data/redirects.json`), then copies `assets/` and any `static/` into
+   `dist/`. `lib/css.js` compiles `styles/main.css` with the Tailwind CLI after
+   pages render (so Tailwind sees the generated HTML) and before assets are
+   copied.
+5. `scripts/dev.js` reruns this whole build (with `--drafts`) on any change
+   under `content/`, `templates/`, `styles/`, `assets/js`, `assets/img`,
+   `site.config.json` or `scripts/`, and serves `dist/` with clean URLs. In dev
+   (`NODE_ENV=development`) every root-relative `href`/`src` is rewritten with
+   a `/dist` prefix; absolute URLs (canonical, `og:*`, JSON-LD, sitemap, RSS)
+   are left untouched. `scripts/check.js` strips that same prefix back off
+   before checking that links resolve to real output files.
+6. `scripts/check.js` reloads the same content model, walks the built `dist/`
+   tree, and errors on duplicate URLs or internal links/images pointing at
+   files that don't exist; it warns on missing or overlong SEO fields, missing
+   `alt` text and thin body content.
+
+Nothing in the pipeline is page-specific: a page exists because a markdown file
+exists in a collection directory, and navigation highlighting, listing pages,
+the sitemap, RSS, the search index and JSON-LD are all derived from `model` at
+build time.
 
 ## Rules
 

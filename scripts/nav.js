@@ -59,7 +59,7 @@ function createSampleEntry(name, label) {
 }
 
 function createIndexPage(navUrl, label, listLayoutName) {
-  const slug = navUrl.replace(/^\/|\/$/g, '');
+  const slug = navUrl.replace(/^\/|\/$/g, '').replace(/\.html$/, '');
   if (!slug || slug.includes('/')) {
     return { file: null, created: false, skipped: true };
   }
@@ -76,10 +76,10 @@ function addCollectionConfig(name, label, navUrl, itemLayoutName) {
   const site = readJson(sitePath);
   if (site.collections[name]) return { created: false };
 
-  const trimmedUrl = navUrl.endsWith('/') ? navUrl.slice(0, -1) : navUrl;
+  const trimmedUrl = navUrl.replace(/\.html$/, '').replace(/\/$/, '');
   site.collections[name] = {
     dir: `content/${name}`,
-    urlPattern: `${trimmedUrl}/:slug/`,
+    urlPattern: `${trimmedUrl}/:slug.html`,
     layout: itemLayoutName,
     sort: 'order',
     index: { label, url: navUrl },
@@ -100,7 +100,7 @@ function createCollectionLayout(name, label) {
 
 if (!label || !url || extra.length) {
   console.error(
-    '\n  Usage: npm run nav:add -- "Label" "/path/" [--collection=name] [--limit=8] [--plain]\n',
+    '\n  Usage: npm run nav:add -- "Label" "/path.html" [--collection=name] [--limit=8] [--plain]\n',
   );
   process.exit(1);
 }

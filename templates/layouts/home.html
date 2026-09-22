@@ -6,7 +6,7 @@
       <p class="mt-5 mb-8 max-w-[54ch] text-lede text-ink-2">{{ page.heroText }}</p>
       <div class="flex flex-wrap gap-3.5">
         <a class="btn btn-primary" href="{{ site.contact.bookingUrl }}" target="_blank" rel="noopener">{{ site.contact.bookingLabel }}</a>
-        <a class="btn btn-ghost" href="/products/">See our AppExchange apps</a>
+        <a class="btn btn-ghost" href="/products.html">See our AppExchange apps</a>
       </div>
       <ul class="mt-8 flex flex-wrap gap-2">
         {{# each data.company.clouds }}
@@ -91,7 +91,7 @@
     <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
       {{# each latestPosts }}{{> card-post }}{{/ each }}
     </div>
-    <p class="mt-8"><a href="/blog/" class="font-medium text-brand hover:text-brand-dark">All posts</a></p>
+    <p class="mt-8"><a href="/blog.html" class="font-medium text-brand hover:text-brand-dark">All posts</a></p>
   </div>
 </section>
 

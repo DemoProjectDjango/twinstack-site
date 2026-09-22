@@ -29,48 +29,48 @@
   "collections": {
     "pages": {
       "dir": "content/pages",
-      "urlPattern": "/:slug/",
+      "urlPattern": "/:slug.html",
       "layout": "page",
       "sort": "order"
     },
     "products": {
       "dir": "content/products",
-      "urlPattern": "/products/:slug/",
+      "urlPattern": "/products/:slug.html",
       "layout": "product",
       "sort": "order",
       "index": {
         "label": "Products",
-        "url": "/products/"
+        "url": "/products.html"
       }
     },
     "services": {
       "dir": "content/services",
-      "urlPattern": "/services/:slug/",
+      "urlPattern": "/services/:slug.html",
       "layout": "service",
       "sort": "order",
       "index": {
         "label": "Services",
-        "url": "/services/"
+        "url": "/services.html"
       }
     },
     "blog": {
       "dir": "content/blog",
-      "urlPattern": "/blog/:slug/",
+      "urlPattern": "/blog/:slug.html",
       "layout": "post",
       "sort": "date:desc",
       "index": {
         "label": "Blog",
-        "url": "/blog/"
+        "url": "/blog.html"
       }
     },
     "caseStudies": {
       "dir": "content/case-studies",
-      "urlPattern": "/case-studies/:slug/",
+      "urlPattern": "/case-studies/:slug.html",
       "layout": "case-study",
       "sort": "order",
       "index": {
         "label": "Case studies",
-        "url": "/case-studies/"
+        "url": "/case-studies.html"
       }
     }
   },

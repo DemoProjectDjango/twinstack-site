@@ -14,4 +14,4 @@ faqTopics: [products]
 
 Every app on this page started as something we needed on a client project. Publishing them keeps us honest: the same Security Review that gates a paying ISV's package gates ours, so the standard we hold client code to is the standard our own code has already met.
 
-All three are read-safe to install, carry no user cap and never ask for payment. If you need one of them extended for your own org, that becomes a [product development engagement](/services/appexchange-product-development/).
+All three are read-safe to install, carry no user cap and never ask for payment. If you need one of them extended for your own org, that becomes a [product development engagement](/services/appexchange-product-development.html).

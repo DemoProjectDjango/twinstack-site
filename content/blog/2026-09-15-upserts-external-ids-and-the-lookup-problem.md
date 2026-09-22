@@ -4,7 +4,7 @@ date: 2026-09-15
 category: Data
 author: TwinStack Team
 tags: [data loading, integration, migration]
-relatedProduct: /products/smart-lookup-data-loader/
+relatedProduct: /products/smart-lookup-data-loader.html
 description: Why lookup fields break CSV imports into Salesforce, how external IDs and multi-field matching fix it, and when to stop using VLOOKUP as a data pipeline.
 excerpt: Your source system exports names and codes. Data loaders want record IDs. Everything painful about CSV imports lives in that gap.
 ---
@@ -56,6 +56,6 @@ Single-field matching on anything as unstable as a company name is how most dupl
 
 ## Doing it inside Salesforce
 
-We wrote [Smart Lookup Data Loader](/products/smart-lookup-data-loader/) to remove the VLOOKUP stage entirely. It runs natively in the org, auto-maps CSV headers to fields, resolves lookups by matching on the fields your file actually contains, supports multi-field matching for upserts, and reports failures per row so a rerun only touches what failed. It is free, and nothing leaves the org during a load.
+We wrote [Smart Lookup Data Loader](/products/smart-lookup-data-loader.html) to remove the VLOOKUP stage entirely. It runs natively in the org, auto-maps CSV headers to fields, resolves lookups by matching on the fields your file actually contains, supports multi-field matching for upserts, and reports failures per row so a rerun only touches what failed. It is free, and nothing leaves the org during a load.
 
-For a one-off migration, the [data migration process](/services/data-migration/) matters more than the tool: audit, mapping document, dry run, reconciliation. The tool only makes the execution less painful.
+For a one-off migration, the [data migration process](/services/data-migration.html) matters more than the tool: audit, mapping document, dry run, reconciliation. The tool only makes the execution less painful.

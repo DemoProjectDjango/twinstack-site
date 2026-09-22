@@ -3,34 +3,34 @@
   "primary": [
     {
       "label": "Products",
-      "url": "/products/",
+      "url": "/products.html",
       "type": "collection",
       "collection": "products",
       "limit": 8
     },
     {
       "label": "Services",
-      "url": "/services/",
+      "url": "/services.html",
       "type": "collection",
       "collection": "services",
       "limit": 8
     },
     {
       "label": "Case studies",
-      "url": "/case-studies/"
+      "url": "/case-studies.html"
     },
     {
       "label": "Blog",
-      "url": "/blog/"
+      "url": "/blog.html"
     },
     {
       "label": "About",
-      "url": "/about/"
+      "url": "/about.html"
     }
   ],
   "cta": {
     "label": "Contact us",
-    "url": "/contact/"
+    "url": "/contact.html"
   },
   "footer": [
     {
@@ -58,23 +58,23 @@
       "links": [
         {
           "label": "About TwinStack",
-          "url": "/about/"
+          "url": "/about.html"
         },
         {
           "label": "Case studies",
-          "url": "/case-studies/"
+          "url": "/case-studies.html"
         },
         {
           "label": "Blog",
-          "url": "/blog/"
+          "url": "/blog.html"
         },
         {
           "label": "FAQ",
-          "url": "/faq/"
+          "url": "/faq.html"
         },
         {
           "label": "Contact",
-          "url": "/contact/"
+          "url": "/contact.html"
         }
       ]
     },
@@ -103,11 +103,11 @@
   "legal": [
     {
       "label": "Privacy",
-      "url": "/privacy/"
+      "url": "/privacy.html"
     },
     {
       "label": "Terms",
-      "url": "/terms/"
+      "url": "/terms.html"
     },
     {
       "label": "Sitemap",

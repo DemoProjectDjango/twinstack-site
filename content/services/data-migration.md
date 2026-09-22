@@ -42,4 +42,4 @@ We do not quote a migration until we have profiled the source, because the numbe
 
 The mapping document, the transformation rules and the reconciliation report stay with you. When someone asks in six months why a field looks the way it does, the answer is written down.
 
-For recurring imports after the migration, our [Smart Lookup Data Loader](/products/smart-lookup-data-loader/) handles CSV upserts with lookup resolution natively, which usually removes the need for an ongoing ETL licence.
+For recurring imports after the migration, our [Smart Lookup Data Loader](/products/smart-lookup-data-loader.html) handles CSV upserts with lookup resolution natively, which usually removes the need for an ongoing ETL licence.

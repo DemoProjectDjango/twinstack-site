@@ -33,7 +33,7 @@ faqTopics: [services, engagement]
 
 Most of the orgs we are asked to rescue share a shape: five years of well-intentioned changes, three generations of automation running on the same object, permission sets nobody wants to delete, and one person who understands it who is leaving in a month.
 
-The first job is visibility, not rewriting. A health check tells you where the risk actually sits — which is rarely where it feels like it sits. Permission sprawl in particular is easier to see with [Who Sees What](/products/who-sees-what/) than with a spreadsheet.
+The first job is visibility, not rewriting. A health check tells you where the risk actually sits — which is rarely where it feels like it sits. Permission sprawl in particular is easier to see with [Who Sees What](/products/who-sees-what.html) than with a spreadsheet.
 
 ## Retainers
 

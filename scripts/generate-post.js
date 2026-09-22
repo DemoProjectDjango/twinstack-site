@@ -253,7 +253,7 @@ async function run() {
 
   if (topic.status === 'queued') {
     topic.status = 'published';
-    topic.publishedAs = `/blog/${slugify(data.title) || slug}/`;
+    topic.publishedAs = `/blog/${slugify(data.title) || slug}.html`;
     topic.publishedOn = today;
     fs.writeFileSync(queuePath, `${JSON.stringify(queue, null, 2)}\n`);
   }

@@ -4,7 +4,7 @@ date: 2026-08-25
 category: Admin
 author: TwinStack Team
 tags: [permissions, security, admin]
-relatedProduct: /products/who-sees-what/
+relatedProduct: /products/who-sees-what.html
 description: Profiles, permission sets, groups, role hierarchy and sharing rules all grant access, and no Setup screen shows them together. How to trace a grant.
 excerpt: Five separate mechanisms grant access in Salesforce, and no single Setup screen shows them together. Here is how to trace any grant back to the rule that made it.
 ---
@@ -58,6 +58,6 @@ That is why offboarding checks and access reviews are worth running against a co
 
 ## Doing it in two clicks instead
 
-We built [Who Sees What](/products/who-sees-what/) because we were running the manual version of this process several times a week. It starts from a user, resolves object, field and record access together, and names the profile, permission set or sharing rule responsible for each grant. It is native, read-only and free, so it is safe to install in production and safe to hand to someone you would not give Setup access to.
+We built [Who Sees What](/products/who-sees-what.html) because we were running the manual version of this process several times a week. It starts from a user, resolves object, field and record access together, and names the profile, permission set or sharing rule responsible for each grant. It is native, read-only and free, so it is safe to install in production and safe to hand to someone you would not give Setup access to.
 
 The manual method above still matters. Knowing where access comes from is what lets you decide what to change once you can see it.

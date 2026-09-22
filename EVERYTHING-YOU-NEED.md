@@ -169,7 +169,7 @@ and future-dated posts are visible in `npm run dev` and excluded from
 Add to `content/data/redirects.json`:
 
 ```json
-{ "from": "/old-page.html", "to": "/new-page/", "status": 301 }
+{ "from": "/old-page.html", "to": "/new-page.html", "status": 301 }
 ```
 
 Written to `dist/_redirects` on build (Netlify and Cloudflare Pages read this
@@ -181,7 +181,7 @@ Markdown bodies are run through the template engine before being converted, so
 inside any content file you can write:
 
 ```markdown
-Email us at {{ site.contact.email }} or read the [migration process](/services/data-migration/).
+Email us at {{ site.contact.email }} or read the [migration process](/services/data-migration.html).
 
 {{> stats }}
 {{> testimonials }}
@@ -325,10 +325,10 @@ Say you want `events`:
    ```json
    "events": {
      "dir": "content/events",
-     "urlPattern": "/events/:slug/",
+     "urlPattern": "/events/:slug.html",
      "layout": "event",
      "sort": "date:desc",
-     "index": { "label": "Events", "url": "/events/" }
+     "index": { "label": "Events", "url": "/events.html" }
    }
    ```
 2. Create `templates/layouts/event.html` and a list layout if you want an index.
@@ -337,7 +337,7 @@ Say you want `events`:
 3. Create `content/events/` and add markdown files.
 4. Optionally add to `navigation.json`:
    ```json
-   { "label": "Events", "url": "/events/", "type": "collection", "collection": "events", "limit": 5 }
+   { "label": "Events", "url": "/events.html", "type": "collection", "collection": "events", "limit": 5 }
    ```
 
 No changes to build code. That is the extension point the whole design is built
