@@ -39,7 +39,7 @@
 <section class="section-y bg-mist">
   <div class="wrap">
     <h2 class="mb-12 text-h2">What it does</h2>
-    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="card-grid">
       {{# each page.capabilities }}
       <div class="card">
         <h4 class="text-lede font-bold">{{ title }}</h4>
@@ -62,7 +62,7 @@
 <section class="section-y border-t border-line">
   <div class="wrap">
     <h2 class="mb-12 text-h2">Our other apps</h2>
-    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="card-grid">
       {{# each otherProducts }}{{> card-product }}{{/ each }}
     </div>
   </div>

@@ -62,7 +62,7 @@
 <section class="section-y bg-mist">
   <div class="wrap">
     <h2 class="mb-12 text-h2">Mentioned in this post</h2>
-    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">{{# each relatedItems }}{{> card-product }}{{/ each }}</div>
+    <div class="card-grid">{{# each relatedItems }}{{> card-product }}{{/ each }}</div>
   </div>
 </section>
 {{/ if }}
@@ -70,7 +70,7 @@
 <section class="section-y border-t border-line">
   <div class="wrap">
     <h2 class="mb-12 text-h2">Keep reading</h2>
-    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">{{# each latestPosts }}{{> card-post }}{{/ each }}</div>
+    <div class="card-grid">{{# each latestPosts }}{{> card-post }}{{/ each }}</div>
   </div>
 </section>
 

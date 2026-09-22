@@ -59,7 +59,7 @@
 
 /* The page gutter. Used on every section, so it earns a utility. */
 @utility wrap {
-  width: min(100% - 2.5rem, 71rem);
+  width: min(100% - 2.5rem, 80rem);
   margin-inline: auto;
 }
 
@@ -136,6 +136,12 @@
   }
   a.card:hover { @apply border-line-strong; }
 
+  /* The responsive grid every card set sits in: 1 column on mobile, 2 from
+     tablet, 3 from desktop. */
+  .card-grid {
+    @apply grid gap-8 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
   /* The one elevated element in the design: the lifecycle / at-a-glance rail */
   .rail {
     @apply overflow-hidden rounded-card border border-line bg-white;
@@ -170,7 +176,7 @@
    plugin styles it. Tuned to the brand rather than left at defaults. */
 @layer components {
   .prose-twinstack {
-    @apply prose prose-slate max-w-[68ch]
+    @apply prose prose-slate max-w-[1280px]
            prose-headings:font-display prose-headings:tracking-tight prose-headings:text-ink
            prose-h2:mt-12 prose-h2:text-h3
            prose-h3:mt-8 prose-h3:text-[1.3rem]
@@ -193,7 +199,7 @@
   .prose-twinstack :where(code):not(:where([class~="not-prose"] *))::after {
     content: none;
   }
-  .prose-wide { @apply max-w-[82ch]; }
+  .prose-wide { @apply max-w-[1280px]; }
 
   /* Wide markdown tables scroll instead of pushing the page sideways. */
   .table-scroll { @apply overflow-x-auto; }

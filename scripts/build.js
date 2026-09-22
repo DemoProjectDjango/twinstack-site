@@ -130,6 +130,11 @@ function build() {
       faqItems,
       isHome: entry.url === '/',
       latestPosts: (lists.blog || []).filter((p) => p.url !== entry.url).slice(0, 3),
+      recentPosts: (lists.blog || []).filter((p) => p.url !== entry.url).slice(0, 5),
+      productPosts: (collections.blog || [])
+        .filter((p) => typeof p.relatedProduct === 'string' && p.relatedProduct.startsWith('/products/'))
+        .slice(0, 5)
+        .map(pick),
       otherProducts: (lists.products || []).filter((p) => p.url !== entry.url),
       otherServices: (lists.services || []).filter((p) => p.url !== entry.url).slice(0, 3),
       relatedItems: [page.relatedProduct]

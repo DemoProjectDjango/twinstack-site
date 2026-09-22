@@ -23,7 +23,7 @@ templates/layouts/   one file per page type
 templates/partials/  shared fragments (header, footer, cards, CTA)
 styles/main.css      Tailwind source: theme tokens, utilities, component layer
 assets/              compiled CSS, JS, images — copied to dist/assets
-scripts/             build, dev server, checker, scaffolder, blog writer
+scripts/             build, dev server, checker, scaffolder, blog writer, page editor
 dist/                generated output; never edit, never commit
 ```
 
@@ -41,6 +41,11 @@ npm run nav:remove -- "Label"
 npm run blog:preview           # generate the next queued post with Claude, print only
 npm run blog:generate          # generate and write it as a draft
 npm run blog:publish           # generate and mark it published
+npm run page:edit -- <page> "<instruction>"        # edit one existing content/template file with Claude, now
+npm run page:edit:preview -- <page> "<instruction>" # same, print only, write nothing
+npm run page:edit                                  # run every queued edit in scripts/page-commands.json
+npm run page:edit:preview                          # same, print only, write nothing
+npm run page:edit:list                             # list the pending queue, run nothing
 ```
 
 There is no separate lint or test suite — `npm run check` (build + link/URL/SEO
@@ -153,6 +158,29 @@ npm run blog:generate         # write it as a draft
 The house style, audience, banned phrases and topic queue live in
 `content/data/blog-queue.json`. Change the writing by changing that file, not
 `scripts/generate-post.js`.
+
+**Edit an existing page with Claude**
+
+```bash
+npm run page:edit:preview -- products "Add a short section listing the 5 most recent blog posts"
+npm run page:edit -- products "Add a short section listing the 5 most recent blog posts"
+```
+
+`<page>` is a content slug, a URL, or a path under `content/` or `templates/`.
+`scripts/edit-page.js` reads the whole file, sends it to Claude with the
+frontmatter reference, the template engine syntax and the context variables
+available to that file (see `scripts/edit-page.js` for the full list —
+`recentPosts`/`latestPosts` etc.), and writes back the complete file. It
+refuses to write if the result looks truncated, drops a required frontmatter
+field, or has unbalanced `{{#if}}`/`{{#each}}` blocks.
+
+Run with no `<page>` argument and it works through the queue in
+`scripts/page-commands.json` instead — a list of `{ file, instruction }` jobs,
+applied in order, each one removed from the queue once it's written. Add jobs
+to that file by hand any time; `npm run page:edit:list` prints what's pending
+without running anything. A `<page>` argument on the command line always runs
+that one edit immediately and never touches the queue file. Always
+`npm run check` afterwards.
 
 ## Frontmatter reference
 

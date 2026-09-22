@@ -1,0 +1,4 @@
+{
+  "_comment": "Queue of pending edits for `npm run page:edit` (no arguments). Each entry is one job: { file, instruction }. Running with no arguments processes every entry in order, writes each one, then removes it from this queue. Add entries by hand any time; running `npm run page:edit -- <page> \"<instruction>\"` with arguments applies that edit immediately instead and never touches this file.",
+  "queue": []
+}

@@ -15,6 +15,9 @@ npm run nav:add -- "Products" "/products.html" --collection=products --limit=8
 npm run nav:remove -- "FAQ"  # remove a primary navbar item
 npm run blog:generate     # write the next queued post with Claude
 npm run blog:preview -- --topic="A useful topic" --description="Optional context for the post"
+npm run page:edit -- products "Add a section listing the 5 most recent blog posts"  # edit an existing page with Claude, now
+npm run page:edit:preview -- products "..."  # same, print only, write nothing
+npm run page:edit             # run every queued edit in scripts/page-commands.json instead
 ```
 
 Node 18 or newer. Tailwind is the only dependency; there is no framework or

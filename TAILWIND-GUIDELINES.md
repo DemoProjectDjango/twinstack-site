@@ -101,9 +101,10 @@ state variants at the end where they are easy to scan.
 when a mobile layout genuinely differs from the desktop one rather than scaling
 down — the navigation is the one real case in this codebase.
 
-**Grids.** The site standard is `grid gap-8 sm:grid-cols-2 lg:grid-cols-3` for
-card sets and `md:grid-cols-2` for wider pairs. Match it rather than inventing
-a new rhythm.
+**Grids.** Use `.card-grid` for any product/service/post/case-study card set —
+it's `grid gap-8 sm:grid-cols-2 lg:grid-cols-3`, the site standard: 1 column on
+mobile, 2 from tablet, 3 from desktop. Use `md:grid-cols-2` inline for wider
+pairs (deliverables, results). Match these rather than inventing a new rhythm.
 
 **Interactive state goes in data attributes, not JavaScript styling.** The
 mobile nav is `data-open="false"` in HTML, flipped by JS, styled by
@@ -130,6 +131,7 @@ lighter.
 | `.btn` + `.btn-primary` `.btn-ghost` `.btn-light` `.btn-onink` | Every button and call to action |
 | `.badge` + `.badge-live` `.badge-brand` `.badge-dot` | Status pills |
 | `.card` | Product, service, post, case study and generic cards |
+| `.card-grid` | The responsive grid every card set sits in: 1/2/3 columns |
 | `.rail` + `.rail-row` | The one elevated element: the lifecycle and at-a-glance panels |
 | `.faq summary` | `<details>` marker, which needs pseudo-elements |
 | `.field-input` | Form inputs, for when a form is added |
