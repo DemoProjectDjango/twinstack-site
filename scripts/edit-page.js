@@ -31,6 +31,7 @@ import { parseFrontmatter } from './lib/markdown.js';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const COMMANDS_PATH = path.join(ROOT, 'scripts/page-commands.json');
+const DEFAULT_QUEUE_COMMENT = 'Queue of pending edits for `npm run page:edit` (no arguments). Each entry is one job: { file, instruction }. Running with no arguments processes every entry in order, writes each one, then removes it from this queue. Add entries by hand any time; running `npm run page:edit -- <page> "<instruction>"` with arguments applies that edit immediately instead and never touches this file.';
 const EDITABLE_ROOTS = ['content', 'templates', 'styles/main.css', 'site.config.json'];
 
 const argv = process.argv.slice(2);
@@ -276,7 +277,8 @@ async function runAdHoc(pageArg, instruction) {
 
 async function runQueue() {
   const registry = loadQueue();
-  const { queue } = registry;
+  // Blank placeholder entries (file "" and instruction "") are not real jobs.
+  const queue = registry.queue.filter((job) => job.file || job.instruction);
 
   if (!queue.length) {
     console.log(`
@@ -311,7 +313,12 @@ async function runQueue() {
   }
 
   if (!dryRun) {
-    console.log(stoppedEarly ? '  Stopped after a failed edit — it and any after it are still queued.\n' : '  Queue cleared. Validate with: npm run check\n');
+    if (stoppedEarly) {
+      console.log('  Stopped after a failed edit — it and any after it are still queued.\n');
+    } else {
+      writeQueue({ _comment: DEFAULT_QUEUE_COMMENT, queue: [{ file: '', instruction: '' }] });
+      console.log('  Queue cleared and reset to a blank placeholder job. Validate with: npm run check\n');
+    }
   }
 }
 
