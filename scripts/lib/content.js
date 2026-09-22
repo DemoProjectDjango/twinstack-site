@@ -51,12 +51,22 @@ export function formatDate(value, locale = 'en-GB') {
   return date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function listMarkdown(dir) {
+/** Every .md file under dir, recursing into subdirectories, as paths relative
+ * to dir with forward slashes (e.g. "who-sees-what/how-to-use.md"). Lets a
+ * collection mirror a nested URL tree as real nested folders on disk. */
+function listMarkdown(dir, base = dir) {
   if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir)
-    .filter((file) => file.endsWith('.md') && !file.startsWith('_'))
-    .sort();
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('_')) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...listMarkdown(full, base));
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      out.push(path.relative(base, full).split(path.sep).join('/'));
+    }
+  }
+  return out.sort();
 }
 
 function applyUrlPattern(pattern, slug) {
@@ -74,7 +84,12 @@ export function outputPathFor(url) {
 function loadEntry({ file, dir, collection, config, site }) {
   const raw = fs.readFileSync(path.join(dir, file), 'utf8');
   const { data, body } = parseFrontmatter(raw);
-  const slug = data.slug || file.replace(/\.md$/, '').replace(/^\d{4}-\d{2}-\d{2}-/, '');
+  const dirPart = path.dirname(file); // "." for a top-level file
+  const baseSlug = path
+    .basename(file, '.md')
+    .replace(/^\d{4}-\d{2}-\d{2}-/, '');
+  const derivedSlug = dirPart === '.' ? baseSlug : `${dirPart}/${baseSlug}`;
+  const slug = data.slug || derivedSlug;
   const rendered = renderMarkdown(body);
   const url = data.url || applyUrlPattern(config.urlPattern, slug);
 
