@@ -1,0 +1,19 @@
+<section class="cta-band section-y bg-ink text-onink">
+  <div class="wrap grid items-center gap-12 lg:grid-cols-[1.2fr_0.8fr]">
+    <div>
+      <h2 class="max-w-[20ch] text-h2 text-white">{{# if page.ctaHeading }}{{ page.ctaHeading }}{{ else }}Tell us what you are building.{{/ if }}</h2>
+      <p class="mt-4 max-w-[52ch] text-lede">{{# if page.ctaText }}{{ page.ctaText }}{{ else }}A 30-minute call is usually enough to tell you whether your idea fits the AppExchange, and what it would take to get there.{{/ if }}</p>
+    </div>
+    <div class="flex flex-col gap-5">
+      <div class="flex flex-wrap gap-3.5">
+        <a class="btn btn-light" href="{{ site.contact.bookingUrl }}" target="_blank" rel="noopener">{{ site.contact.bookingLabel }}</a>
+        <a class="btn btn-onink" href="/contact.html">Contact page</a>
+      </div>
+      <p class="text-onink-muted">
+        <a href="mailto:{{ site.contact.email }}" class="text-[#9fc4ee] no-underline hover:underline">{{ site.contact.email }}</a> ·
+        <a href="{{ site.contact.whatsappUrl }}" class="text-[#9fc4ee] no-underline hover:underline">WhatsApp</a><br>
+        {{ site.contact.responseTime }}
+      </p>
+    </div>
+  </div>
+</section>
