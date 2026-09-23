@@ -18,8 +18,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, readJson, slugify, loadSite } from './lib/content.js';
 import { parseFrontmatter } from './lib/markdown.js';
+import { callClaude, stripBrokenLinks, bannedPhraseWarnings, frontmatterBlock } from './lib/claude-writer.js';
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
 const argv = process.argv.slice(2);
 const flag = (name) => {
   const hit = argv.find((a) => a === `--${name}` || a.startsWith(`--${name}=`));
@@ -133,42 +133,6 @@ ${topic.notes ? `Notes: ${topic.notes}` : ''}
 
 Include at least one concrete, checkable example: a short code block, a query, a table, or a numbered procedure someone could follow in an org.`;
 
-/* ------------------------------------------------------------------- the API */
-
-async function callClaude() {
-  const body = {
-    model: site.automation.model,
-    max_tokens: 4000,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-  };
-
-  if (flag('research')) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }];
-  }
-
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Anthropic API ${response.status}: ${(await response.text()).slice(0, 400)}`);
-  }
-
-  const payload = await response.json();
-  return payload.content
-    .filter((block) => block.type === 'text')
-    .map((block) => block.text)
-    .join('')
-    .trim();
-}
-
 /* --------------------------------------------------------------- validation */
 
 function validate(markdown) {
@@ -187,33 +151,14 @@ function validate(markdown) {
 
   if (/^#\s/m.test(body)) warnings.push('body contains an H1; the layout renders the title already');
 
-  let cleaned = body;
-  const links = [...body.matchAll(/\[([^\]]+)\]\((\/[^)\s]*)\)/g)];
-  for (const [full, label, href] of links) {
-    const normalised = href.endsWith('/') || href.includes('.') ? href : `${href}/`;
-    if (!internalUrls.includes(normalised)) {
-      warnings.push(`removed link to non-existent page: ${href}`);
-      cleaned = cleaned.replace(full, label);
-    }
-  }
-
-  const banned = [/let's dive in/i, /in today's fast-paced/i, /game.?changer/i, /unlock the power/i];
-  for (const pattern of banned) {
-    if (pattern.test(cleaned)) warnings.push(`contains banned phrase: ${pattern.source}`);
-  }
+  const { cleaned, removed } = stripBrokenLinks(body, internalUrls);
+  for (const href of removed) warnings.push(`removed link to non-existent page: ${href}`);
+  for (const warning of bannedPhraseWarnings(cleaned)) warnings.push(warning);
 
   return { problems, warnings, data, cleaned, words };
 }
 
 /* -------------------------------------------------------------------- write */
-
-function frontmatterBlock(data, extra) {
-  const merged = { ...data, ...extra };
-  const lines = Object.entries(merged)
-    .filter(([, value]) => value !== undefined && value !== '' && !(Array.isArray(value) && !value.length))
-    .map(([key, value]) => `${key}: ${Array.isArray(value) ? `[${value.join(', ')}]` : value}`);
-  return `---\n${lines.join('\n')}\n---\n`;
-}
 
 async function run() {
   console.log(`\n  Topic: ${topic.title}`);
@@ -226,7 +171,13 @@ async function run() {
     return;
   }
 
-  const raw = await callClaude();
+  const raw = await callClaude({
+    apiKey,
+    model: site.automation.model,
+    systemPrompt,
+    userContent: userPrompt,
+    research: flag('research'),
+  });
   const { problems, warnings, data, cleaned, words } = validate(raw);
 
   for (const warning of warnings) console.log(`  warning: ${warning}`);

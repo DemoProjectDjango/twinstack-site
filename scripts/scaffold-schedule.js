@@ -2,7 +2,7 @@
 /**
  * Runs whichever dated content-generation jobs in scripts/scaffold-schedule.md
  * are due, writing each one as a real Claude-authored page (not a
- * placeholder).
+ * placeholder) grounded in the `content` and `images` the job supplies.
  *
  *   node scripts/scaffold-schedule.js              run every due, unfinished job
  *   node scripts/scaffold-schedule.js --dry-run     print what's due and what
@@ -11,9 +11,16 @@
  *
  * scripts/scaffold-schedule.md holds a fenced ```json array of jobs:
  *   { location, title, date, description, content, images, research, done }
- * See that file for the full field reference. A job whose date has arrived
- * and isn't already "done": true runs once, then gets "done": true and a
- * "completedDate" stamped in, so it never runs twice.
+ * See that file for the full field reference, including how `images` entries
+ * (local paths or URLs) are actually shown to Claude as vision input rather
+ * than just named in text. A job whose date has arrived and isn't already
+ * "done": true runs once, then gets "done": true and a "completedDate"
+ * stamped in, so it never runs twice.
+ *
+ * The generated page is written only from the brief/content/images it's
+ * given (no invented facts) and is checked against the site's real internal
+ * URLs afterwards, the same as scripts/generate-post.js: any link Claude
+ * added to a page that doesn't exist is stripped before the file is written.
  *
  * Requires ANTHROPIC_API_KEY. Without it, each due job's prompt is printed
  * instead of sent, and the job is left pending for the next run.
@@ -21,17 +28,19 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, readJson, slugify } from './lib/content.js';
+import { ROOT, readJson, slugify, loadSite } from './lib/content.js';
 import { scaffoldBody } from './lib/scaffold-templates.js';
 import { updateChangelog } from './lib/scaffold-tree-runner.js';
+import { callClaude, stripFence, resolveImages, stripBrokenLinks, bannedPhraseWarnings } from './lib/claude-writer.js';
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
 const SCHEDULE_PATH = path.join(ROOT, 'scripts/scaffold-schedule.md');
 const JSON_BLOCK = /```json\n([\s\S]*?)\n```/;
 
 const dryRun = process.argv.slice(2).includes('--dry-run');
 const apiKey = process.env.ANTHROPIC_API_KEY;
 const site = readJson(path.join(ROOT, 'site.config.json'));
+const model = loadSite({ includeDrafts: true, includeFuture: true });
+const internalUrls = model.all.map((e) => e.url).sort();
 
 /* ------------------------------------------------------------- schedule I/O */
 
@@ -92,54 +101,45 @@ function resolveJob(job) {
 
 /* ---------------------------------------------------------------- the call */
 
-function buildPrompts(job, type, skeleton) {
-  const systemPrompt = `You write one new page for ${site.name}'s site (${site.description}). You are given a brief and must write the complete file: real frontmatter values and a real, useful markdown body — not placeholder text.
+function buildPrompts(job, skeleton, images) {
+  const imageList = images.length
+    ? images.map((img) => `- ${img.ref}${img.block ? '' : '  (reference only — not readable as an image)'}`).join('\n')
+    : 'None supplied.';
+
+  const systemPrompt = `You write one new page for ${site.name}'s site (${site.description}). You are given a brief, and usually source notes and images, and must write the complete file: real frontmatter values and a real, useful markdown body — not placeholder text.
+
+GROUNDING — the most important rule here
+- Base the body only on the brief and the notes/images below. Do not add facts, figures, names, dates or claims that aren't in that material.
+- If the material is thin, write a shorter, more general page rather than inventing specifics to fill space.
+- Where an image is shown to you, write real, specific alt text describing what's actually in it — never a generic caption.
 
 FILE SHAPE TO FOLLOW (fill in every field for real; keep the same field names and structure):
 ${skeleton}
 
 HOUSE RULES (from CLAUDE.md — follow exactly)
 - British spelling, sentence case headings, plain verbs. No exclamation marks, no "unlock", "seamless", "game-changing", "dive in".
-- Do not invent facts: statistics, client names, release numbers, or claims about Salesforce behaviour must be things you're confident are true. If unsure, describe the shape of the thing rather than quantifying it.
 - Do not add a leading "# Title" heading in the body — the layout renders the title separately. Use "##" for section headings.
-- If image URLs are supplied, work them into the body with markdown image syntax ![alt text](url) wherever they genuinely fit, with meaningful alt text. Do not invent image URLs of your own.
+
+IMAGES
+${imageList}
+If any are listed as readable, use markdown image syntax ![alt text](path) with that exact path, wherever it genuinely fits — do not invent or alter a path. If none are listed, add no images.
+
+LINKING
+Link to other existing pages only where it genuinely helps the reader, written as root-relative markdown links, from this list:
+${internalUrls.join('\n')}
+Never invent a URL. Adding no links at all is fine.
 
 OUTPUT
 Return only the raw contents of the new file, starting with the opening "---" of the frontmatter. No commentary, no surrounding code fence.`;
 
-  const userPrompt = `Title: ${job.title}
+  const userText = `Title: ${job.title}
 Brief: ${job.description}
-${job.content ? `Notes/content to work from:\n${job.content}\n` : ''}${job.images?.length ? `Image URLs to use:\n${job.images.map((u) => `- ${u}`).join('\n')}\n` : ''}`;
+${job.content ? `Source notes/content to work from (use only this, don't go beyond it):\n${job.content}\n` : ''}`;
 
-  return { systemPrompt, userPrompt };
-}
+  const imageBlocks = images.map((img) => img.block).filter(Boolean);
+  const userContent = imageBlocks.length ? [{ type: 'text', text: userText }, ...imageBlocks] : userText;
 
-async function callClaude(systemPrompt, userPrompt, research) {
-  const body = {
-    model: site.automation.model,
-    max_tokens: 4000,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-  };
-  if (research) body.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 4 }];
-
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Anthropic API ${response.status}: ${(await response.text()).slice(0, 400)}`);
-  }
-
-  const payload = await response.json();
-  return payload.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
-}
-
-function stripFence(text) {
-  const fenced = text.match(/^```[a-z]*\n([\s\S]*)\n```$/);
-  return fenced ? fenced[1] : text;
+  return { systemPrompt, userContent };
 }
 
 function sanityCheck(raw) {
@@ -170,30 +170,37 @@ async function runJob(job) {
 
   const today = new Date().toISOString().slice(0, 10);
   const skeleton = scaffoldBody(resolved.type, { title: job.title, today, defaultAuthor: site.automation.defaultAuthor });
-  const { systemPrompt, userPrompt } = buildPrompts(job, resolved.type, skeleton);
   const research = job.research !== false;
 
   if (dryRun) {
-    console.log(`  + ${resolved.file}  (would write, research: ${research})`);
+    const images = resolveImages(job.images);
+    console.log(`  + ${resolved.file}  (would write, research: ${research}, images: ${images.length}/${(job.images || []).length} readable)`);
     return false;
   }
 
+  const images = resolveImages(job.images);
+  const { systemPrompt, userContent } = buildPrompts(job, skeleton, images);
+
   if (!apiKey) {
-    console.log(`\n----- ${job.title}: system prompt -----\n${systemPrompt}\n\n----- user prompt -----\n${userPrompt}\n`);
+    console.log(`\n----- ${job.title}: system prompt -----\n${systemPrompt}\n\n----- user content -----\n${typeof userContent === 'string' ? userContent : JSON.stringify(userContent, null, 2)}\n`);
     console.log('  No ANTHROPIC_API_KEY set — job left pending.\n');
     return false;
   }
 
-  console.log(`  ... generating ${resolved.file} (model: ${site.automation.model}, research: ${research})`);
-  const raw = stripFence(await callClaude(systemPrompt, userPrompt, research));
+  console.log(`  ... generating ${resolved.file} (model: ${site.automation.model}, research: ${research}, images: ${images.length})`);
+  const raw = stripFence(await callClaude({ apiKey, model: site.automation.model, systemPrompt, userContent, research }));
   const problems = sanityCheck(raw);
   if (problems.length) {
     console.error(`  ! ${job.title} — rejected:\n${problems.map((p) => `      - ${p}`).join('\n')}`);
     return false;
   }
 
+  const { cleaned, removed } = stripBrokenLinks(raw, internalUrls);
+  for (const href of removed) console.log(`  ! ${job.title} — removed a link to a page that doesn't exist: ${href}`);
+  for (const warning of bannedPhraseWarnings(cleaned)) console.log(`  ! ${job.title} — ${warning}`);
+
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, raw.endsWith('\n') ? raw : `${raw}\n`);
+  fs.writeFileSync(target, cleaned.endsWith('\n') ? cleaned : `${cleaned}\n`);
   console.log(`  + ${resolved.file}`);
   return true;
 }

@@ -38,6 +38,11 @@ npm run css / npm run css:watch   # compile styles/main.css -> assets/css/main.c
 npm run new <type> "Title"     # scaffold a product, service, page, post or case study
 npm run nav:add -- "Label" "/url/" [--collection=name --limit=n]
 npm run nav:remove -- "Label"
+npm run scaffold                       # create every page listed in scripts/site-tree.md that's missing
+npm run scaffold:preview                # same, print the plan, write nothing
+npm run scaffold:schedule               # run every due job in scripts/scaffold-schedule.md, Claude writes real copy
+npm run scaffold:schedule:preview       # same, print what's due, write and mark nothing
+npm run changelog                       # regenerate CHANGELOG.md from git log
 npm run blog:preview           # generate the next queued post with Claude, print only
 npm run blog:generate          # generate and write it as a draft
 npm run blog:publish           # generate and mark it published
@@ -181,6 +186,27 @@ to that file by hand any time; `npm run page:edit:list` prints what's pending
 without running anything. A `<page>` argument on the command line always runs
 that one edit immediately and never touches the queue file. Always
 `npm run check` afterwards.
+
+**Scaffold the whole page tree, or schedule pages for later**
+
+`scripts/site-tree.md` is an indented bullet list of every page path the site
+should have, each optionally followed by `— instruction` text for Claude to
+write the body from. `npm run scaffold` walks it and creates whatever markdown
+files are missing (`--force` to also overwrite existing ones, `--file=` to use
+a different tree file); `npm run scaffold:preview` prints the plan without
+writing.
+
+`scripts/scaffold-schedule.md` holds a fenced JSON array of dated one-off
+jobs (`location`, `title`, `date`, `description`, plus optional `content`,
+`images`, `research`) — each one runs once its date arrives, Claude writes the
+real body copy (not a placeholder), and the job is marked `"done": true` so it
+never runs twice. `npm run scaffold:schedule` runs whatever is due;
+`npm run scaffold:schedule:preview` prints it without writing or marking
+anything. Both scaffold commands need `ANTHROPIC_API_KEY`.
+
+Both scaffold commands append to `CHANGELOG.md` afterwards (via
+`scripts/lib/changelog.js`); `npm run changelog` regenerates it from `git log`
+directly. Treat `CHANGELOG.md` as generated — like `dist/`, don't hand-edit it.
 
 ## Frontmatter reference
 
