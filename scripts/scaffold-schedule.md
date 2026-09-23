@@ -46,41 +46,19 @@ Preview what's due without generating, writing or marking anything:
 
 ## Moving a premade page instead of generating one
 
-If you've already written the page yourself, give the job a `source` instead
-of `description`/`content`/`images`/`research`, and it's moved into place on
-its date rather than generated: no Claude call, no API key needed.
+If you've already written the page yourself — frontmatter and body both done,
+just sitting in the wrong place until its date — give the job a `source`
+instead of `description`/`content`/`images`/`research`, and it's moved rather
+than generated: no Claude call, no API key needed.
 
 - `source` (required for a move job) — path to the finished file, anywhere in
   the repo. `content/_scheduled/` is a good place to keep these: it's a
   sibling of `content/pages` etc., not one of the directories the build walks,
   so files there are completely invisible to the site until moved. Organise
   it however you like — `source` names the exact path either way.
-
-There are two shapes a premade file can be, and `location` decides which
-handling it gets:
-
-- **A content fragment** — frontmatter (`title`, `description`, etc.) plus a
-  markdown/HTML body, exactly like every other file under `content/`. Use a
-  `location` that's a real collection directory or a `content/pages/...` path,
-  same as a generated job. `title` is required (it decides the destination
-  filename and predicted URL) and the file is rendered through the normal
-  pipeline — nav, footer, sitemap, search index and the site's shared layout
-  all apply to it, same as any hand-written page. **The file must actually
-  have a `---` frontmatter block** — one without it is rejected outright
-  rather than silently written as a broken page (missing title, its markup
-  printed as literal text instead of rendering).
-- **A full standalone HTML document** — its own `<html>`/`<head>`/`<style>`,
-  meant to be served exactly as written, with no site chrome at all. Use a
-  `location` under `static/`, e.g. `"static/movies"`. This is copied straight
-  through byte-for-byte with no frontmatter, no markdown, no layout — the same
-  way `build.js` already copies the whole `static/` folder into `dist/`
-  untouched. `title` is optional here (only used for logging); the
-  destination keeps the source file's own filename, and its URL is exactly
-  `/<location without "static/">/<filename>`. **It won't appear in the nav,
-  sitemap, search index or JSON-LD** — those are all generated from real
-  content, and a static passthrough page isn't part of that model. If you
-  want it discoverable, link to it from a real content page, or add it to
-  `content/data/navigation.json` yourself.
+- `location` and `title` still work exactly as for a generated job, and
+  still decide the destination file and its real URL — `title` is required
+  even here, since the predicted URL (see below) depends on it.
 
 Any `<a href>`, `<img src>` or markdown link inside the moved file that
 points at another job's `source` path (by full path or bare filename, e.g.
@@ -96,16 +74,6 @@ exactly as written.
   "location": "content/pages/movies",
   "title": "John Wick",
   "source": "content/_scheduled/john-wick.html",
-  "date": "2026-09-25",
-  "done": false
-}
-```
-
-```json
-{
-  "location": "static/movies",
-  "title": "John Wick (fan page)",
-  "source": "content/_scheduled/john-wick-fanpage.html",
   "date": "2026-09-25",
   "done": false
 }
@@ -134,7 +102,7 @@ exactly as written.
 ```json
 [
   {
-    "location": "content/pages/movies",
+    "location": "static/movies",
     "title": "John Wick",
     "source": "content/_scheduled/john-wick.html",
     "date": "2026-09-23",
