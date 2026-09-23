@@ -33,7 +33,7 @@ Fields:
   warning; anything over 5MB or not a jpg/png/gif/webp is still named in the
   body's image list but not shown visually.
 - `research` (optional, default `true`) — let Claude use web search for
-  supporting facts.
+  supporting facts, same as `npm run blog:generate --research`.
 - `done` / `completedDate` — bookkeeping the script maintains; don't hand-edit.
 
 The generated page can link to other real pages on the site — Claude is given
@@ -110,7 +110,7 @@ exactly as written.
     "completedDate": "2026-09-23"
   },
   {
-    "location": "content/pages/movies",
+    "location": "static/movies",
     "title": "John Wick 2",
     "source": "content/_scheduled/john-wick2.html",
     "date": "2026-09-23",

@@ -43,7 +43,7 @@ import { updateChangelog, appendToSiteTree } from './lib/scaffold-tree-runner.js
 import { callClaude, stripFence, resolveImages, stripBrokenLinks, bannedPhraseWarnings } from './lib/claude-writer.js';
 
 const SCHEDULE_PATH = path.join(ROOT, 'scripts/scaffold-schedule.md');
-const JSON_BLOCK = /```json\n([\s\S]*?)\n```/g;
+const JSON_BLOCK = /```json\r?\n([\s\S]*?)\r?\n```/g;
 
 const dryRun = process.argv.slice(2).includes('--dry-run');
 const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -134,12 +134,21 @@ function readSchedule() {
   return { text, jobs };
 }
 
+/** The file may be checked out with CRLF line endings (e.g. Windows with
+ * git's core.autocrlf=true) — match whatever's already there so a rewritten
+ * job list doesn't leave the file with mixed line endings. */
+function detectEol(text) {
+  const idx = text.indexOf('\n');
+  return idx > 0 && text[idx - 1] === '\r' ? '\r\n' : '\n';
+}
+
 function writeSchedule(text, jobs) {
   const match = findJobsBlock(text);
-  const block = '```json\n' + JSON.stringify(jobs, null, 2) + '\n```';
+  const eol = detectEol(text);
+  const block = ('```json\n' + JSON.stringify(jobs, null, 2) + '\n```').replace(/\n/g, eol);
   const updated = match
     ? text.slice(0, match.index) + block + text.slice(match.index + match[0].length)
-    : `${text}\n\n${block}\n`;
+    : `${text}${eol}${eol}${block}${eol}`;
   fs.writeFileSync(SCHEDULE_PATH, updated);
 }
 
