@@ -44,6 +44,41 @@ the file is written (the run log names what was removed).
 Preview what's due without generating, writing or marking anything:
 `npm run scaffold:schedule:preview`.
 
+## Moving a premade page instead of generating one
+
+If you've already written the page yourself — frontmatter and body both done,
+just sitting in the wrong place until its date — give the job a `source`
+instead of `description`/`content`/`images`/`research`, and it's moved rather
+than generated: no Claude call, no API key needed.
+
+- `source` (required for a move job) — path to the finished file, anywhere in
+  the repo. `content/_scheduled/` is a good place to keep these: it's a
+  sibling of `content/pages` etc., not one of the directories the build walks,
+  so files there are completely invisible to the site until moved. Organise
+  it however you like — `source` names the exact path either way.
+- `location` and `title` still work exactly as for a generated job, and
+  still decide the destination file and its real URL — `title` is required
+  even here, since the predicted URL (see below) depends on it.
+
+Any `<a href>`, `<img src>` or markdown link inside the moved file that
+points at another job's `source` path (by full path or bare filename, e.g.
+`href="john-wick-2.html"`) is rewritten to that page's real final URL. This
+is resolved from every job in the schedule up front, not just the ones due
+today, so it doesn't matter which of two cross-linking pages moves first —
+by the time either moves, both of their destination URLs are already known.
+A link to anything else (an existing site page, an external site) is left
+exactly as written.
+
+```json
+{
+  "location": "content/pages/movies",
+  "title": "John Wick",
+  "source": "content/_scheduled/john-wick.html",
+  "date": "2026-09-25",
+  "done": false
+}
+```
+
 ## Testing a job locally
 
 1. Set `ANTHROPIC_API_KEY` — either `export ANTHROPIC_API_KEY=sk-ant-...` in
@@ -71,11 +106,7 @@ Preview what's due without generating, writing or marking anything:
     "title": "Service Cloud",
     "date": "2026-09-23",
     "description": "Description of the job.",
-    "content": "
-    Category: CRM / Customer 
-    ServiceWhat it does: Streamlines customer support, case tracking, and multi-channel issue resolution.Key 
-    Features: Service Console, case management, automated macros, and a built-in knowledge base
-    ",
+    "content": "\n    Category: CRM / Customer \n    ServiceWhat it does: Streamlines customer support, case tracking, and multi-channel issue resolution.Key \n    Features: Service Console, case management, automated macros, and a built-in knowledge base\n    ",
     "images": [],
     "done": false
   },

@@ -11,11 +11,15 @@
  *
  * scripts/scaffold-schedule.md holds a fenced ```json array of jobs:
  *   { location, title, date, description, content, images, research, done }
+ * — or, for a page you've already written yourself and just want moved into
+ * place on its date instead of generated:
+ *   { location, title, date, source, done }
  * See that file for the full field reference, including how `images` entries
  * (local paths or URLs) are actually shown to Claude as vision input rather
- * than just named in text. A job whose date has arrived and isn't already
- * "done": true runs once, then gets "done": true and a "completedDate"
- * stamped in, so it never runs twice.
+ * than just named in text, and how a moved file's own links to other staged
+ * pages get rewritten to their real final URLs. A job whose date has arrived
+ * and isn't already "done": true runs once, then gets "done": true and a
+ * "completedDate" stamped in, so it never runs twice.
  *
  * The generated page is written only from the brief/content/images it's
  * given (no invented facts) and is checked against the site's real internal
@@ -28,7 +32,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, readJson, slugify, loadSite } from './lib/content.js';
+import { ROOT, readJson, slugify, loadSite, applyUrlPattern } from './lib/content.js';
 import { scaffoldBody } from './lib/scaffold-templates.js';
 import { updateChangelog } from './lib/scaffold-tree-runner.js';
 import { callClaude, stripFence, resolveImages, stripBrokenLinks, bannedPhraseWarnings } from './lib/claude-writer.js';
@@ -118,25 +122,80 @@ function collectionDirs() {
   return map;
 }
 
-/** Returns { type, file, error } */
+/** Returns { type, file, url, error } — `url` is the page's real final address,
+ * predicted from `location` + `title` alone, before the file exists. Used both
+ * to write the destination and (for move jobs) to resolve cross-references
+ * between staged pages regardless of which one moves first. */
 function resolveJob(job) {
+  if (!job.title) return { error: 'has no "title", which the filename, slug and predicted URL all depend on.' };
   const slug = slugify(job.title);
   const location = String(job.location || '').replace(/\/$/, '');
   const dirs = collectionDirs();
 
   const collectionHit = dirs.get(location);
   if (collectionHit) {
-    return { type: collectionHit.key, file: `${collectionHit.cfg.dir}/${slug}.md` };
+    const { key, cfg } = collectionHit;
+    return { type: key, file: `${cfg.dir}/${slug}.md`, url: applyUrlPattern(cfg.urlPattern, slug) };
   }
 
   if (location === 'content/pages' || location.startsWith('content/pages/')) {
     const sub = location.replace(/^content\/pages\/?/, '');
-    return { type: 'pages', file: sub ? `content/pages/${sub}/${slug}.md` : `content/pages/${slug}.md` };
+    const fullSlug = sub ? `${sub}/${slug}` : slug;
+    return {
+      type: 'pages',
+      file: `content/pages/${fullSlug}.md`,
+      url: applyUrlPattern(site.collections.pages.urlPattern, fullSlug),
+    };
   }
 
   return {
     error: `"${job.location}" isn't a collection directory (${[...dirs.keys()].join(', ')}) or under content/pages/ — the build would never find it.`,
   };
+}
+
+/** Maps every way a staged page might be referenced (its source path, that
+ * path without a leading slash, and its bare filename) to the real URL it
+ * will have once moved — built from every "source" job in the whole
+ * schedule, not just the ones due today, so a link to a page scheduled for
+ * later still resolves correctly. */
+function buildStagedUrlMap(jobs) {
+  const map = new Map();
+  for (const job of jobs) {
+    if (!job.source) continue;
+    const resolved = resolveJob(job);
+    if (resolved.error) continue;
+    const stripped = String(job.source).replace(/^\/+/, '');
+    for (const key of [job.source, stripped, `/${stripped}`, path.basename(stripped)]) {
+      map.set(key, resolved.url);
+    }
+  }
+  return map;
+}
+
+/** Rewrites any markdown link or href/src attribute that points at a staged
+ * page's source path into that page's real destination URL. Leaves anything
+ * that isn't a reference to another staged page untouched. */
+function resolveStagedLinks(text, stagedUrlMap) {
+  const changed = [];
+  const lookup = (href) => {
+    const clean = href.split(/[?#]/)[0];
+    return (
+      stagedUrlMap.get(href) ||
+      stagedUrlMap.get(clean.replace(/^\.?\//, '')) ||
+      stagedUrlMap.get(path.basename(clean)) ||
+      null
+    );
+  };
+  const rewrite = (full, pre, href, post) => {
+    const url = lookup(href);
+    if (!url || url === href) return full;
+    changed.push(`${href} -> ${url}`);
+    return `${pre}${url}${post}`;
+  };
+
+  let cleaned = text.replace(/(\[[^\]]+\]\()([^)\s]+)(\))/g, rewrite);
+  cleaned = cleaned.replace(/((?:href|src)=["'])([^"']+)(["'])/g, rewrite);
+  return { cleaned, changed };
 }
 
 /* ---------------------------------------------------------------- the call */
@@ -193,12 +252,39 @@ function sanityCheck(raw) {
   return problems;
 }
 
+/** A job with a "source" moves an already-written file into place instead of
+ * asking Claude to write one. Its own cross-references to other staged pages
+ * (by source path or bare filename) are rewritten to their real URLs first. */
+function runMoveJob(job, resolved, target, stagedUrlMap) {
+  const sourcePath = path.join(ROOT, job.source);
+  if (!fs.existsSync(sourcePath)) {
+    console.error(`  ! ${job.title} — source file not found: ${job.source}`);
+    return false;
+  }
+
+  const raw = fs.readFileSync(sourcePath, 'utf8');
+  const { cleaned, changed } = resolveStagedLinks(raw, stagedUrlMap);
+
+  if (dryRun) {
+    console.log(`  + ${resolved.file}  (would move from ${job.source}${changed.length ? `, relinking ${changed.length}` : ''})`);
+    for (const c of changed) console.log(`      ~ ${c}`);
+    return false;
+  }
+
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, cleaned.endsWith('\n') ? cleaned : `${cleaned}\n`);
+  fs.unlinkSync(sourcePath);
+  for (const c of changed) console.log(`  ~ ${job.title} — relinked ${c}`);
+  console.log(`  + ${resolved.file}  (moved from ${job.source})`);
+  return true;
+}
+
 /* ---------------------------------------------------------------- one job */
 
-async function runJob(job) {
+async function runJob(job, stagedUrlMap) {
   const resolved = resolveJob(job);
   if (resolved.error) {
-    console.error(`  ! ${job.title} — ${resolved.error}`);
+    console.error(`  ! ${job.title || job.source || '(untitled job)'} — ${resolved.error}`);
     return false;
   }
 
@@ -207,6 +293,8 @@ async function runJob(job) {
     console.log(`  = ${resolved.file}  (already exists, marking done without touching it)`);
     return true;
   }
+
+  if (job.source) return runMoveJob(job, resolved, target, stagedUrlMap);
 
   const today = new Date().toISOString().slice(0, 10);
   const skeleton = scaffoldBody(resolved.type, { title: job.title, today, defaultAuthor: site.automation.defaultAuthor });
@@ -250,6 +338,7 @@ async function runJob(job) {
 async function main() {
   const { text, jobs } = readSchedule();
   const today = new Date().toISOString().slice(0, 10);
+  const stagedUrlMap = buildStagedUrlMap(jobs);
 
   console.log(`\n  Checking ${path.relative(ROOT, SCHEDULE_PATH)} (today: ${today})\n`);
 
@@ -269,7 +358,7 @@ async function main() {
     }
 
     due++;
-    const done = await runJob(job);
+    const done = await runJob(job, stagedUrlMap);
     if (done && !dryRun) {
       job.done = true;
       job.completedDate = today;

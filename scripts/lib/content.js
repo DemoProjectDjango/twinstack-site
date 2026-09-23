@@ -69,7 +69,7 @@ function listMarkdown(dir, base = dir) {
   return out.sort();
 }
 
-function applyUrlPattern(pattern, slug) {
+export function applyUrlPattern(pattern, slug) {
   const url = pattern.replace(':slug', slug);
   return url.endsWith('/') || url.endsWith('.html') ? url : `${url}/`;
 }
