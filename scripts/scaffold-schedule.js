@@ -38,7 +38,7 @@ import { updateChangelog } from './lib/scaffold-tree-runner.js';
 import { callClaude, stripFence, resolveImages, stripBrokenLinks, bannedPhraseWarnings } from './lib/claude-writer.js';
 
 const SCHEDULE_PATH = path.join(ROOT, 'scripts/scaffold-schedule.md');
-const JSON_BLOCK = /```json\n([\s\S]*?)\n```/;
+const JSON_BLOCK = /```json\n([\s\S]*?)\n```/g;
 
 const dryRun = process.argv.slice(2).includes('--dry-run');
 const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -88,15 +88,25 @@ function escapeRawControlCharsInStrings(text) {
   return out;
 }
 
+/** The doc has other ```json fences too (a one-job example for a move job),
+ * so the real job list is identified as the one fenced block whose content
+ * is actually an array, not just "the first ```json fence". */
+function findJobsBlock(text) {
+  for (const match of text.matchAll(JSON_BLOCK)) {
+    if (match[1].trim().startsWith('[')) return match;
+  }
+  return null;
+}
+
 function readSchedule() {
   if (!fs.existsSync(SCHEDULE_PATH)) {
     console.error(`\n  No schedule file at ${path.relative(ROOT, SCHEDULE_PATH)}.\n`);
     process.exit(1);
   }
   const text = fs.readFileSync(SCHEDULE_PATH, 'utf8');
-  const match = JSON_BLOCK.exec(text);
+  const match = findJobsBlock(text);
   if (!match) {
-    console.error(`\n  ${path.relative(ROOT, SCHEDULE_PATH)} has no \`\`\`json job list.\n`);
+    console.error(`\n  ${path.relative(ROOT, SCHEDULE_PATH)} has no \`\`\`json job list (a fenced JSON array).\n`);
     process.exit(1);
   }
   let jobs;
@@ -110,8 +120,12 @@ function readSchedule() {
 }
 
 function writeSchedule(text, jobs) {
+  const match = findJobsBlock(text);
   const block = '```json\n' + JSON.stringify(jobs, null, 2) + '\n```';
-  fs.writeFileSync(SCHEDULE_PATH, text.replace(JSON_BLOCK, block));
+  const updated = match
+    ? text.slice(0, match.index) + block + text.slice(match.index + match[0].length)
+    : `${text}\n\n${block}\n`;
+  fs.writeFileSync(SCHEDULE_PATH, updated);
 }
 
 /* -------------------------------------------------------------- resolve job */
