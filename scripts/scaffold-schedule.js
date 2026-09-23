@@ -14,11 +14,16 @@
  * — or, for a page you've already written yourself and just want moved into
  * place on its date instead of generated:
  *   { location, title, date, source, done }
- * See that file for the full field reference, including how `images` entries
- * (local paths or URLs) are actually shown to Claude as vision input rather
- * than just named in text, and how a moved file's own links to other staged
- * pages get rewritten to their real final URLs. A job whose date has arrived
- * and isn't already "done": true runs once, then gets "done": true and a
+ * A move job's `location` decides how the file is handled: a real collection
+ * dir or content/pages/... renders it through the normal content pipeline
+ * (it must have real frontmatter), while a location under static/ copies a
+ * full standalone HTML document straight through untouched, the same way
+ * build.js already copies the whole static/ folder into dist/. See that file
+ * for the full field reference, including how `images` entries (local paths
+ * or URLs) are actually shown to Claude as vision input rather than just
+ * named in text, and how a moved file's own links to other staged pages get
+ * rewritten to their real final URLs. A job whose date has arrived and isn't
+ * already "done": true runs once, then gets "done": true and a
  * "completedDate" stamped in, so it never runs twice.
  *
  * The generated page is written only from the brief/content/images it's
@@ -48,39 +53,49 @@ const internalUrls = model.all.map((e) => e.url).sort();
 
 /* ------------------------------------------------------------- schedule I/O */
 
-/** Hand-edited JSON tends to get real line breaks pasted into a string value
- * (e.g. multi-line `content`), which is a raw control character and not
- * legal there — JSON requires "\n". Escapes newlines/tabs/CRs found while
- * inside a string, leaving already-escaped sequences and everything outside
- * strings untouched, so people don't have to think about this when pasting
- * notes in. */
-function escapeRawControlCharsInStrings(text) {
+/** Hand-edited JSON picks up two mistakes constantly: real line breaks pasted
+ * into a string value (e.g. multi-line `content`), which is a raw control
+ * character JSON doesn't allow there, and a trailing comma before a closing
+ * `}`/`]`, which JS object literals tolerate but JSON doesn't. Fixes both in
+ * one string-boundary-aware pass — commas are only ever dropped outside a
+ * string, and already-escaped sequences are left alone — so people don't
+ * have to think about either when editing this file by hand. */
+function sanitizeHandEditedJson(text) {
   let out = '';
   let inString = false;
   let escaped = false;
-  for (const ch of text) {
-    if (!inString) {
-      if (ch === '"') inString = true;
-      out += ch;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escaped) {
+        out += ch;
+        escaped = false;
+      } else if (ch === '\\') {
+        out += ch;
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+        out += ch;
+      } else if (ch === '\n') {
+        out += '\\n';
+      } else if (ch === '\r') {
+        // dropped: a preceding \r in a \r\n pair collapses into the \n escape above
+      } else if (ch === '\t') {
+        out += '\\t';
+      } else {
+        out += ch;
+      }
       continue;
     }
-    if (escaped) {
+
+    if (ch === '"') {
+      inString = true;
       out += ch;
-      escaped = false;
-      continue;
-    }
-    if (ch === '\\') {
-      out += ch;
-      escaped = true;
-    } else if (ch === '"') {
-      inString = false;
-      out += ch;
-    } else if (ch === '\n') {
-      out += '\\n';
-    } else if (ch === '\r') {
-      // dropped: a preceding \r in a \r\n pair collapses into the \n escape above
-    } else if (ch === '\t') {
-      out += '\\t';
+    } else if (ch === ',') {
+      let j = i + 1;
+      while (j < text.length && /\s/.test(text[j])) j++;
+      if (text[j] !== '}' && text[j] !== ']') out += ch;
     } else {
       out += ch;
     }
@@ -111,7 +126,7 @@ function readSchedule() {
   }
   let jobs;
   try {
-    jobs = JSON.parse(escapeRawControlCharsInStrings(match[1]));
+    jobs = JSON.parse(sanitizeHandEditedJson(match[1]));
   } catch (error) {
     console.error(`\n  Could not parse the job list as JSON: ${error.message}\n`);
     process.exit(1);
@@ -141,9 +156,28 @@ function collectionDirs() {
  * to write the destination and (for move jobs) to resolve cross-references
  * between staged pages regardless of which one moves first. */
 function resolveJob(job) {
+  const location = String(job.location || '').replace(/\/$/, '');
+
+  // A location under static/ is a full standalone HTML document (its own
+  // <html>/<head>/<style>, not a content fragment) that must be served
+  // completely as written — the build already copies static/ into dist/
+  // untouched, so this is a move-only destination: no frontmatter, no
+  // markdown, no layout, and the source's own filename is kept as-is.
+  if (location === 'static' || location.startsWith('static/')) {
+    if (!job.source) {
+      return { error: 'a location under static/ only makes sense for a move job with a "source" — there is no content to generate for a full standalone page.' };
+    }
+    const sub = location.replace(/^static\/?/, '');
+    const filename = path.basename(job.source);
+    return {
+      type: 'static',
+      file: sub ? `static/${sub}/${filename}` : `static/${filename}`,
+      url: `/${sub ? `${sub}/` : ''}${filename}`,
+    };
+  }
+
   if (!job.title) return { error: 'has no "title", which the filename, slug and predicted URL all depend on.' };
   const slug = slugify(job.title);
-  const location = String(job.location || '').replace(/\/$/, '');
   const dirs = collectionDirs();
 
   const collectionHit = dirs.get(location);
@@ -270,13 +304,28 @@ function sanityCheck(raw) {
  * asking Claude to write one. Its own cross-references to other staged pages
  * (by source path or bare filename) are rewritten to their real URLs first. */
 function runMoveJob(job, resolved, target, stagedUrlMap) {
+  const label = job.title || path.basename(job.source);
   const sourcePath = path.join(ROOT, job.source);
   if (!fs.existsSync(sourcePath)) {
-    console.error(`  ! ${job.title} — source file not found: ${job.source}`);
+    console.error(`  ! ${label} — source file not found: ${job.source}`);
     return false;
   }
 
   const raw = fs.readFileSync(sourcePath, 'utf8');
+
+  // Anywhere other than static/, the file is rendered through the normal
+  // content pipeline (frontmatter -> markdown -> layout), so it needs real
+  // frontmatter — a full standalone HTML document would otherwise get
+  // parsed as a bodyless page whose title falls back to its slug and whose
+  // markup prints as literal escaped text instead of rendering.
+  if (resolved.type !== 'static') {
+    const problems = sanityCheck(raw);
+    if (problems.length) {
+      console.error(`  ! ${label} — ${job.source} isn't valid content for ${job.location}:\n${problems.map((p) => `      - ${p}`).join('\n')}\n      If this is a full standalone HTML document, use a "static/..." location instead — it's copied through untouched.`);
+      return false;
+    }
+  }
+
   const { cleaned, changed } = resolveStagedLinks(raw, stagedUrlMap);
 
   if (dryRun) {
@@ -288,7 +337,7 @@ function runMoveJob(job, resolved, target, stagedUrlMap) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, cleaned.endsWith('\n') ? cleaned : `${cleaned}\n`);
   fs.unlinkSync(sourcePath);
-  for (const c of changed) console.log(`  ~ ${job.title} — relinked ${c}`);
+  for (const c of changed) console.log(`  ~ ${label} — relinked ${c}`);
   console.log(`  + ${resolved.file}  (moved from ${job.source})`);
   return true;
 }
