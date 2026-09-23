@@ -44,6 +44,46 @@ const internalUrls = model.all.map((e) => e.url).sort();
 
 /* ------------------------------------------------------------- schedule I/O */
 
+/** Hand-edited JSON tends to get real line breaks pasted into a string value
+ * (e.g. multi-line `content`), which is a raw control character and not
+ * legal there — JSON requires "\n". Escapes newlines/tabs/CRs found while
+ * inside a string, leaving already-escaped sequences and everything outside
+ * strings untouched, so people don't have to think about this when pasting
+ * notes in. */
+function escapeRawControlCharsInStrings(text) {
+  let out = '';
+  let inString = false;
+  let escaped = false;
+  for (const ch of text) {
+    if (!inString) {
+      if (ch === '"') inString = true;
+      out += ch;
+      continue;
+    }
+    if (escaped) {
+      out += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      out += ch;
+      escaped = true;
+    } else if (ch === '"') {
+      inString = false;
+      out += ch;
+    } else if (ch === '\n') {
+      out += '\\n';
+    } else if (ch === '\r') {
+      // dropped: a preceding \r in a \r\n pair collapses into the \n escape above
+    } else if (ch === '\t') {
+      out += '\\t';
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
 function readSchedule() {
   if (!fs.existsSync(SCHEDULE_PATH)) {
     console.error(`\n  No schedule file at ${path.relative(ROOT, SCHEDULE_PATH)}.\n`);
@@ -57,7 +97,7 @@ function readSchedule() {
   }
   let jobs;
   try {
-    jobs = JSON.parse(match[1]);
+    jobs = JSON.parse(escapeRawControlCharsInStrings(match[1]));
   } catch (error) {
     console.error(`\n  Could not parse the job list as JSON: ${error.message}\n`);
     process.exit(1);

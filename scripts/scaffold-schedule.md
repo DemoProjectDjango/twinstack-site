@@ -21,7 +21,9 @@ Fields:
 - `content` (optional) — raw notes, facts, quotes or copy to write from. Claude
   is told to write only from this plus the brief and images, not to invent
   anything beyond them, so thin notes produce a shorter, more general page
-  rather than a confidently wrong one.
+  rather than a confidently wrong one. Pasting real line breaks into this
+  string is fine — the loader escapes them before parsing, so you don't need
+  to type `\n` by hand.
 - `images` (optional) — array of image paths or URLs. An `http(s)://` entry is
   handed to Claude as a normal image source. Anything else is read as a path
   into this repo (e.g. `assets/img/movies/interstellar-poster.jpg`, with or
