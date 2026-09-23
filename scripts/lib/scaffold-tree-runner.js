@@ -238,3 +238,22 @@ export function updateChangelog() {
   const existing = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, 'utf8') : null;
   fs.writeFileSync(changelogPath, generateChangelog(existing));
 }
+
+/** Appends any of `paths` not already listed as a plain top-level bullet at
+ * the end of site-tree.md (matching how entries are already added there by
+ * hand: no indentation, no instruction), so a page written by
+ * scaffold-schedule.js stays reflected in the site's documented page tree.
+ * Returns the ones actually added — already-listed paths are left alone,
+ * never duplicated. */
+export function appendToSiteTree(paths, treeFile = path.join(ROOT, 'scripts/site-tree.md')) {
+  if (!paths.length || !fs.existsSync(treeFile)) return [];
+
+  const text = fs.readFileSync(treeFile, 'utf8');
+  const existing = new Set(parseTree(text).map((node) => node.rawPath));
+  const additions = paths.filter((p) => !existing.has(p));
+  if (!additions.length) return [];
+
+  const trimmed = text.replace(/\n+$/, '');
+  fs.writeFileSync(treeFile, `${trimmed}\n${additions.map((p) => `- ${p}`).join('\n')}\n`);
+  return additions;
+}

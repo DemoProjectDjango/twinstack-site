@@ -39,7 +39,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, readJson, slugify, loadSite, applyUrlPattern } from './lib/content.js';
 import { scaffoldBody } from './lib/scaffold-templates.js';
-import { updateChangelog } from './lib/scaffold-tree-runner.js';
+import { updateChangelog, appendToSiteTree } from './lib/scaffold-tree-runner.js';
 import { callClaude, stripFence, resolveImages, stripBrokenLinks, bannedPhraseWarnings } from './lib/claude-writer.js';
 
 const SCHEDULE_PATH = path.join(ROOT, 'scripts/scaffold-schedule.md');
@@ -407,6 +407,7 @@ async function main() {
 
   let ranAny = false;
   let due = 0;
+  const publishedPaths = [];
 
   for (const job of jobs) {
     if (job.done) continue;
@@ -426,6 +427,8 @@ async function main() {
       job.done = true;
       job.completedDate = today;
       ranAny = true;
+      const resolved = resolveJob(job);
+      if (!resolved.error) publishedPaths.push(resolved.url.replace(/^\//, ''));
     }
   }
 
@@ -436,6 +439,8 @@ async function main() {
 
   if (ranAny) {
     writeSchedule(text, jobs);
+    const addedToTree = appendToSiteTree(publishedPaths);
+    if (addedToTree.length) console.log(`  Added to scripts/site-tree.md: ${addedToTree.join(', ')}`);
     try {
       updateChangelog();
       console.log('  Updated CHANGELOG.md.');
