@@ -83,15 +83,6 @@
   },
   "automation": {
     "model": "claude-sonnet-4-6",
-    "postsPerRun": 1,
-    "publishDay": "Tuesday",
-    "publishTimeUtc": "07:00",
-    "defaultAuthor": "TwinStack Team",
-    "wordCount": [
-      900,
-      1400
-    ],
-    "requireReview": true,
-    "queueFile": "content/data/blog-queue.json"
+    "defaultAuthor": "TwinStack Team"
   }
 }

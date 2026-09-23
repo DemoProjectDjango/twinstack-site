@@ -21,9 +21,6 @@
     "changelog": "node scripts/changelog.js",
     "nav:add": "node scripts/nav.js",
     "nav:remove": "node scripts/nav-remove.js",
-    "blog:generate": "node --env-file-if-exists=.env scripts/generate-post.js",
-    "blog:preview": "node --env-file-if-exists=.env scripts/generate-post.js --dry-run",
-    "blog:publish": "node --env-file-if-exists=.env scripts/generate-post.js --publish",
     "page:edit": "node --env-file-if-exists=.env scripts/edit-page.js",
     "page:edit:preview": "node --env-file-if-exists=.env scripts/edit-page.js --dry-run",
     "page:edit:list": "node --env-file-if-exists=.env scripts/edit-page.js --list"

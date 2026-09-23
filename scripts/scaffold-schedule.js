@@ -28,8 +28,8 @@
  *
  * The generated page is written only from the brief/content/images it's
  * given (no invented facts) and is checked against the site's real internal
- * URLs afterwards, the same as scripts/generate-post.js: any link Claude
- * added to a page that doesn't exist is stripped before the file is written.
+ * URLs afterwards: any link Claude added to a page that doesn't exist is
+ * stripped before the file is written.
  *
  * Requires ANTHROPIC_API_KEY. Without it, each due job's prompt is printed
  * instead of sent, and the job is left pending for the next run.

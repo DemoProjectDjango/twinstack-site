@@ -1,8 +1,8 @@
 /**
- * Shared plumbing for the two scripts that write content with Claude
- * (scripts/generate-post.js and scripts/scaffold-schedule.js): the API call
- * itself, turning `images` fields into real vision input, and the
- * validation/cleanup every generated page goes through before it's trusted.
+ * Shared plumbing for scripts that write content with Claude
+ * (scripts/scaffold-schedule.js): the API call itself, turning `images`
+ * fields into real vision input, and the validation/cleanup every
+ * generated page goes through before it's trusted.
  */
 
 import fs from 'node:fs';
@@ -116,12 +116,4 @@ const BANNED_PHRASES = [/let's dive in/i, /in today's fast-paced/i, /game.?chang
 
 export function bannedPhraseWarnings(text) {
   return BANNED_PHRASES.filter((pattern) => pattern.test(text)).map((pattern) => `contains banned phrase: ${pattern.source}`);
-}
-
-export function frontmatterBlock(data, extra = {}) {
-  const merged = { ...data, ...extra };
-  const lines = Object.entries(merged)
-    .filter(([, value]) => value !== undefined && value !== '' && !(Array.isArray(value) && !value.length))
-    .map(([key, value]) => `${key}: ${Array.isArray(value) ? `[${value.join(', ')}]` : value}`);
-  return `---\n${lines.join('\n')}\n---\n`;
 }

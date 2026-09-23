@@ -16,6 +16,13 @@
  * in site.config.json; anything that doesn't match becomes a standalone page
  * under content/pages/, nested exactly as written. No Claude/API calls here:
  * structure is entirely mechanical, which is also why it costs no tokens.
+ *
+ * Predefined content: if a file exists at
+ * <dir of the tree file>/site-tree-content/<path>.md for a given tree path
+ * (e.g. scripts/site-tree-content/contact.md for the "contact.html" line in
+ * scripts/site-tree.md), its contents are written verbatim instead of the
+ * generic frontmatter skeleton — the instruction text after " — " is ignored
+ * for that path. Any path with no matching file scaffolds exactly as before.
  */
 
 import fs from 'node:fs';
@@ -57,6 +64,11 @@ function collectionsByDirSlug(site) {
 function titleFromSlug(slug) {
   const words = slug.split('-').join(' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** Absolute path to the predefined content file for one tree path, if any. */
+function predefinedContentFile(treeFile, rawPath) {
+  return path.join(path.dirname(treeFile), 'site-tree-content', rawPath.replace(/\.html$/, '.md'));
 }
 
 function segmentsFor(rawPath) {
@@ -212,14 +224,18 @@ export function runScaffoldTree({ treeFile, dryRun = false, force = false }) {
       continue;
     }
 
+    const predefinedFile = predefinedContentFile(treeFile, rawPath);
+    const predefined = fs.existsSync(predefinedFile);
+
     if (dryRun) {
-      console.log(`  + ${node.file}${exists ? '  (would overwrite)' : ''}${instruction ? `\n      instruction: ${instruction}` : ''}`);
+      const suffix = predefined ? '  [predefined]' : (instruction ? `\n      instruction: ${instruction}` : '');
+      console.log(`  + ${node.file}${exists ? '  (would overwrite)' : ''}${suffix}`);
       continue;
     }
 
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, buildFile(node, site));
-    console.log(`  + ${node.file}${exists ? '  (overwritten)' : ''}`);
+    fs.writeFileSync(target, predefined ? fs.readFileSync(predefinedFile, 'utf8') : buildFile(node, site));
+    console.log(`  + ${node.file}${exists ? '  (overwritten)' : ''}${predefined ? '  (from predefined template)' : ''}`);
     created++;
   }
 

@@ -158,12 +158,14 @@ function buildNavigation(navConfig, collections, site) {
     }));
 
   return {
-    primary: withActive(expand(navConfig.primary)),
+    header: {
+      items: withActive(expand(navConfig.header?.items || [])),
+      cta: navConfig.header?.cta || null,
+    },
     footer: (navConfig.footer || []).map((column) => ({
       ...column,
       links: withActive(expand(column.links || [])),
     })),
-    utility: withActive(expand(navConfig.utility || [])),
     legal: withActive(expand(navConfig.legal || [])),
   };
 }
@@ -202,7 +204,7 @@ export function loadSite({ includeDrafts = false, includeFuture = false } = {}) 
     collections[name] = entries;
   }
 
-  const nav = buildNavigation(data.navigation || { primary: [] }, collections, site);
+  const nav = buildNavigation(data.navigation || { header: { items: [] } }, collections, site);
 
   const all = Object.values(collections).flat();
   const byUrl = new Map(all.map((entry) => [entry.url, entry]));

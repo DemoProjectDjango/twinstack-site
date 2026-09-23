@@ -9,9 +9,10 @@
  *
  * Reads scripts/site-tree.md — an indented bullet list of page paths, each
  * optionally followed by " — instruction" — and, for every path that doesn't
- * already have a file, writes a correctly-shaped frontmatter skeleton. See
- * scripts/lib/scaffold-tree-runner.js for the path -> file mapping rules and
- * how nested paths resolve.
+ * already have a file, writes a correctly-shaped frontmatter skeleton, or the
+ * matching file under scripts/site-tree-content/ verbatim if one exists for
+ * that path. See scripts/lib/scaffold-tree-runner.js for the path -> file
+ * mapping rules, the predefined-content lookup, and how nested paths resolve.
  *
  * To run several tree files on a schedule instead of by hand, see
  * scripts/scaffold-schedule.js / scripts/scaffold-schedule.md.

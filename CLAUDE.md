@@ -43,9 +43,6 @@ npm run scaffold:preview                # same, print the plan, write nothing
 npm run scaffold:schedule               # run every due job in scripts/scaffold-schedule.md, Claude writes real copy
 npm run scaffold:schedule:preview       # same, print what's due, write and mark nothing
 npm run changelog                       # regenerate CHANGELOG.md from git log
-npm run blog:preview           # generate the next queued post with Claude, print only
-npm run blog:generate          # generate and write it as a draft
-npm run blog:publish           # generate and mark it published
 npm run page:edit -- <page> "<instruction>"        # edit one existing content/template file with Claude, now
 npm run page:edit:preview -- <page> "<instruction>" # same, print only, write nothing
 npm run page:edit                                  # run every queued edit in scripts/page-commands.json
@@ -155,17 +152,6 @@ the search index all update on the next build. Nothing else needs touching.
 4. Optionally add a `type: "collection"` entry to `navigation.json`.
 
 No build code changes.
-
-**Write a blog post with Claude**
-
-```bash
-npm run blog:preview          # print it, write nothing
-npm run blog:generate         # write it as a draft
-```
-
-The house style, audience, banned phrases and topic queue live in
-`content/data/blog-queue.json`. Change the writing by changing that file, not
-`scripts/generate-post.js`.
 
 **Edit an existing page with Claude**
 

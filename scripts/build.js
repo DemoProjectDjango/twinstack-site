@@ -123,7 +123,7 @@ function build() {
     const context = {
       site,
       data,
-      nav: { ...nav, primary: markActive(nav.primary, entry.url) },
+      nav: { ...nav, header: { ...nav.header, items: markActive(nav.header.items, entry.url) } },
       page,
       collections: lists,
       ...lists,
