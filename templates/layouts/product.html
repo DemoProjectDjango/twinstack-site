@@ -10,7 +10,7 @@
       <h1 class="text-hero">{{# if page.heroHeading }}{{ page.heroHeading }}{{ else }}{{ page.title }}{{/ if }}</h1>
       <p class="mt-5 mb-8 max-w-[54ch] text-lede text-ink-2">{{ page.tagline }}</p>
       <div class="flex flex-wrap gap-3.5">
-        {{# if page.installUrl }}<a class="btn btn-primary" href="{{ page.installUrl }}" target="_blank" rel="noopener">Get it on AppExchange</a>{{/ if }}
+        {{# if page.installUrl }}<a class="btn btn-primary" href="{{ page.installUrl }}" target="_blank" rel="noopener">{{# if page.installLabel }}{{ page.installLabel }}{{ else }}Install now{{/ if }}</a>{{/ if }}
         <a class="btn btn-ghost" href="#how-it-works">How it works</a>
       </div>
     </div>
@@ -53,7 +53,7 @@
 
 <section id="how-it-works" class="section-y">
   <div class="wrap">
-    <div class="prose-twinstack prose-wide">{{{ page.content }}}</div>
+    <div class="prose-site prose-wide">{{{ page.content }}}</div>
   </div>
 </section>
 
