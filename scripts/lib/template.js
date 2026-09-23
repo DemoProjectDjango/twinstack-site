@@ -9,6 +9,11 @@
  *   {{# each list }} … {{/ each }}   inside: {{ this }}, {{ @index }}, {{ @number }},
  *                                            {{ @first }}, {{ @last }}, {{ @odd }}
  *   {{> partial-name }}         include templates/partials/partial-name.html
+ *   {{> [value] }}              include the partial NAMED by the looked-up value —
+ *                                lets a section list in data choose which partial
+ *                                renders each entry, e.g. {{# each data.home.sections }}
+ *                                {{> [partial] }}{{/ each }} with each entry shaped
+ *                                { "partial": "section-products", ... }
  *
  * Name lookup walks the whole context stack, so a partial or an {{#each}} block can
  * still reach `site`, `nav`, `page` etc. without prop drilling.
@@ -67,7 +72,12 @@ function tokenize(source) {
     }
     const [raw, sigil, body] = match;
     if (sigil === '{') tokens.push({ type: 'raw', value: body });
-    else if (sigil === '>') tokens.push({ type: 'partial', value: body.trim() });
+    else if (sigil === '>') {
+      const name = body.trim();
+      const dynamic = /^\[(.+)\]$/.exec(name);
+      if (dynamic) tokens.push({ type: 'partial-dynamic', value: dynamic[1].trim() });
+      else tokens.push({ type: 'partial', value: name });
+    }
     else if (sigil === '#') {
       const [keyword, ...rest] = body.split(/\s+/);
       tokens.push({ type: 'open', keyword, value: rest.join(' ').trim() });
@@ -174,6 +184,14 @@ export class TemplateEngine {
         case 'partial':
           out += this.renderNodes(this.ast(node.value), stack);
           break;
+        case 'partial-dynamic': {
+          const name = lookup(stack, node.value);
+          if (typeof name !== 'string' || !name) {
+            throw new Error(`{{> [${node.value}] }} looked up "${node.value}" and got ${JSON.stringify(name)}, not a partial name`);
+          }
+          out += this.renderNodes(this.ast(name), stack);
+          break;
+        }
         case 'block':
           out += this.renderBlock(node, stack);
           break;

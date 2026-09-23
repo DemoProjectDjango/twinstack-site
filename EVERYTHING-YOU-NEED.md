@@ -312,10 +312,15 @@ templates render because Tailwind reads class names out of them.
 {{# unless x }} … {{/ unless }}
 {{# each list }} {{ this }} {{ @padded }} {{ @index }} {{ @first }} {{/ each }}
 {{> partial-name }}             templates/partials/partial-name.html
+{{> [value] }}                  include the partial NAMED by the looked-up value
 ```
 
 Names resolve up the whole context stack, so a partial always reaches `site`,
-`nav`, `page` and every collection.
+`nav`, `page` and every collection. The dynamic form is how the homepage
+picks its sections: `content/data/home.json` lists `{ "partial": "...", ... }`
+entries and `templates/layouts/home.html` does
+`{{# each data.home.sections }}{{> [partial] }}{{/ each }}` — reorder, remove
+or add a homepage section by editing that JSON file, no template edit needed.
 
 ### Adding a new content type
 

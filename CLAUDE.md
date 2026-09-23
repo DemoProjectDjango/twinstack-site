@@ -67,8 +67,10 @@ page; both always run over the whole site.
    `model` with `site`, `data`, `collections`, `nav`, `all` (every page) and
    `byUrl`.
 2. `lib/template.js` is a tiny dependency-free logic-light engine (`{{ value }}`,
-   `{{{ raw }}}`, `{{#if}}`/`{{#unless}}`, `{{#each}}`, `{{> partial}}`). Name
-   lookup walks the whole context stack, so a partial or `{{#each}}` block
+   `{{{ raw }}}`, `{{#if}}`/`{{#unless}}`, `{{#each}}`, `{{> partial}}`,
+   `{{> [value] }}` to include a partial named by a looked-up value instead of a
+   literal — how `content/data/home.json` picks which partial renders each
+   homepage section). Name lookup walks the whole context stack, so a partial or `{{#each}}` block
    reaches `site`/`nav`/`page` without prop drilling. Every
    `templates/partials/*.html` is registered by filename; every
    `templates/layouts/*.html` is registered as `layout:<name>`.
@@ -139,6 +141,7 @@ the search index all update on the next build. Nothing else needs touching.
 | Nav or footer structure | `content/data/navigation.json` |
 | Headline stats | `content/data/company.json` |
 | FAQ entries | `content/data/faq.json` |
+| Homepage sections — which appear, in what order, their copy | `content/data/home.json` (each entry names a `partial` from `templates/partials/`; add a new partial and reference it here to add a new kind of section, no layout edit needed) |
 | Colours, type scale, fonts | `styles/main.css` → `@theme` |
 | A repeated visual pattern | `styles/main.css` → `@layer components` (read the guidelines first) |
 | Page shell, meta tags, schema | `templates/partials/base.html`, `scripts/lib/schema.js` |

@@ -119,6 +119,11 @@ TEMPLATE ENGINE SYNTAX (only what exists — do not use anything not listed here
   {{# unless value }} … {{/ unless }}
   {{# each list }} … {{/ each }}   inside: {{ this }}, {{ @index }}, {{ @number }}, {{ @first }}, {{ @last }}, {{ @odd }}
   {{> partial-name }}         include templates/partials/partial-name.html
+  {{> [value] }}              include the partial NAMED by the looked-up value, not a
+                               literal — e.g. content/data/home.json's homepage section
+                               list has entries like { "partial": "section-products", ... }
+                               and templates/layouts/home.html does
+                               {{# each data.home.sections }}{{> [partial] }}{{/ each }}
 
 GOTCHA — {{#each}} inside a markdown content file, producing a markdown list:
 Rendering happens BEFORE markdown conversion, so a line break right after
