@@ -74,6 +74,21 @@ export function applyUrlPattern(pattern, slug) {
   return url.endsWith('/') || url.endsWith('.html') ? url : `${url}/`;
 }
 
+/** Marks the nav item (and its children) matching `currentUrl` active, for
+ * `aria-current` and highlighting. Shared by the main build and anything else
+ * that renders the header/footer partials outside the normal page pipeline
+ * (e.g. scaffold-schedule.js chroming a standalone static page). */
+export function markActive(items, currentUrl) {
+  return items.map((item) => {
+    const children = item.children ? markActive(item.children, currentUrl) : [];
+    const active =
+      item.url === currentUrl ||
+      (item.url && item.url !== '/' && currentUrl.startsWith(item.url)) ||
+      children.some((child) => child.active);
+    return { ...item, children, active, ariaCurrent: active ? ' aria-current="page"' : '' };
+  });
+}
+
 /** Turn a URL into the file written inside dist/ */
 export function outputPathFor(url) {
   if (url === '/') return 'index.html';

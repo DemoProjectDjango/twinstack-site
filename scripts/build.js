@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { TemplateEngine, escapeHtml } from './lib/template.js';
-import { loadSite, paths, outputPathFor, pick, ROOT } from './lib/content.js';
+import { loadSite, paths, outputPathFor, pick, markActive, ROOT } from './lib/content.js';
 import { renderMarkdown, excerpt } from './lib/markdown.js';
 import { buildJsonLd } from './lib/schema.js';
 import { buildCss } from './lib/css.js';
@@ -60,17 +60,6 @@ function write(file, contents) {
   const target = path.join(paths.dist, file);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, contents);
-}
-
-function markActive(items, currentUrl) {
-  return items.map((item) => {
-    const children = item.children ? markActive(item.children, currentUrl) : [];
-    const active =
-      item.url === currentUrl ||
-      (item.url && item.url !== '/' && currentUrl.startsWith(item.url)) ||
-      children.some((child) => child.active);
-    return { ...item, children, active, ariaCurrent: active ? ' aria-current="page"' : '' };
-  });
 }
 
 /* --------------------------------------------------------------------- build */

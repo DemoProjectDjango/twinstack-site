@@ -37,7 +37,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, readJson, slugify, loadSite, applyUrlPattern } from './lib/content.js';
+import { ROOT, readJson, slugify, loadSite, applyUrlPattern, paths, markActive } from './lib/content.js';
+import { TemplateEngine } from './lib/template.js';
 import { scaffoldBody } from './lib/scaffold-templates.js';
 import { updateChangelog, appendToSiteTree } from './lib/scaffold-tree-runner.js';
 import { callClaude, stripFence, resolveImages, stripBrokenLinks, bannedPhraseWarnings } from './lib/claude-writer.js';
@@ -50,6 +51,84 @@ const apiKey = process.env.ANTHROPIC_API_KEY;
 const site = readJson(path.join(ROOT, 'site.config.json'));
 const model = loadSite({ includeDrafts: true, includeFuture: true });
 const internalUrls = model.all.map((e) => e.url).sort();
+
+/* ----------------------------------------------------- static page chroming */
+
+// A `static/...` move job is a full standalone HTML document copied straight
+// through, so it never goes near templates/layouts/base.html. Rendering the
+// real header/footer partials here (against the same site/nav data the real
+// build uses) is what lets one of these pages carry the site's actual nav and
+// footer instead of staying fully isolated.
+const chromeEngine = new TemplateEngine();
+for (const file of fs.readdirSync(paths.partials).filter((f) => f.endsWith('.html'))) {
+  chromeEngine.add(file.replace(/\.html$/, ''), fs.readFileSync(path.join(paths.partials, file), 'utf8'));
+}
+
+function renderChrome(url) {
+  const nav = { ...model.nav, header: { ...model.nav.header, items: markActive(model.nav.header.items, url) } };
+  return {
+    header: chromeEngine.render('header', { site: model.site, nav }),
+    footer: chromeEngine.render('footer', { site: model.site, nav }),
+  };
+}
+
+const SITE_ASSET_LINKS = `<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/assets/css/main.css">
+`;
+
+/** The header/footer partials are Tailwind markup and do nothing without the
+ * site's compiled CSS (and its fonts) loaded, so make sure both are linked —
+ * a standalone static page never had a reason to include them itself. */
+function ensureSiteAssets(html) {
+  if (html.includes('/assets/css/main.css')) return html;
+  return /<\/head>/i.test(html)
+    ? html.replace(/<\/head>/i, `${SITE_ASSET_LINKS}</head>`)
+    : `${SITE_ASSET_LINKS}${html}`;
+}
+
+/** Replaces an existing <header>/<nav> block with the real header partial
+ * (whichever tag appears first — a page may only have one), or pushes the
+ * header in right after <body> if neither is present. Same idea for
+ * <footer>, appended just before </body> when missing. */
+/** Replaces every existing match with the rendered partial only at its first
+ * occurrence, and drops the rest — a page with separate sibling <header> and
+ * <nav> elements (rather than one nesting the other) would otherwise leave
+ * the second one behind, duplicating nav markup our header partial already
+ * includes. */
+function replaceFirstDropRest(html, re, replacement) {
+  let inserted = false;
+  let matched = false;
+  const out = html.replace(re, () => {
+    matched = true;
+    if (inserted) return '';
+    inserted = true;
+    return replacement;
+  });
+  return { html: out, matched };
+}
+
+function injectChrome(html, { header, footer }) {
+  const headerRe = /<header\b[\s\S]*?<\/header>|<nav\b[\s\S]*?<\/nav>/gi;
+  const footerRe = /<footer\b[\s\S]*?<\/footer>/gi;
+
+  const headerPass = replaceFirstDropRest(html, headerRe, header);
+  let out = headerPass.matched
+    ? headerPass.html
+    : /<body\b[^>]*>/i.test(html)
+      ? html.replace(/(<body\b[^>]*>)/i, `$1\n${header}`)
+      : `${header}\n${html}`;
+
+  const footerPass = replaceFirstDropRest(out, footerRe, footer);
+  out = footerPass.matched
+    ? footerPass.html
+    : /<\/body>/i.test(out)
+      ? out.replace(/(<\/body>)/i, `${footer}\n$1`)
+      : `${out}\n${footer}`;
+
+  return ensureSiteAssets(out);
+}
 
 /* ------------------------------------------------------------- schedule I/O */
 
@@ -335,10 +414,16 @@ function runMoveJob(job, resolved, target, stagedUrlMap) {
     }
   }
 
-  const { cleaned, changed } = resolveStagedLinks(raw, stagedUrlMap);
+  const { cleaned: relinked, changed } = resolveStagedLinks(raw, stagedUrlMap);
+
+  // A static/ page never goes through templates/layouts/base.html, so it only
+  // gets the site's real header/nav/footer if we splice the rendered
+  // partials in here — replacing whatever <header>/<nav>/<footer> the page
+  // already had, or adding them if it had none.
+  const cleaned = resolved.type === 'static' ? injectChrome(relinked, renderChrome(resolved.url)) : relinked;
 
   if (dryRun) {
-    console.log(`  + ${resolved.file}  (would move from ${job.source}${changed.length ? `, relinking ${changed.length}` : ''})`);
+    console.log(`  + ${resolved.file}  (would move from ${job.source}${changed.length ? `, relinking ${changed.length}` : ''}${resolved.type === 'static' ? ', chroming header/footer' : ''})`);
     for (const c of changed) console.log(`      ~ ${c}`);
     return false;
   }
