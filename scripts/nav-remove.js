@@ -34,7 +34,7 @@ function matchesItem(item, target) {
 
 const target = normaliseUrl(identifier);
 const navigation = readJson(navigationPath);
-const matches = navigation.primary.filter((item) => matchesItem(item, target));
+const matches = navigation.header.items.filter((item) => matchesItem(item, target));
 
 if (!matches.length) {
   console.error(`\n  Navbar item not found: ${identifier}\n`);
@@ -48,10 +48,10 @@ if (matches.length > 1) {
 }
 
 const [removed] = matches;
-navigation.primary = navigation.primary.filter((item) => item !== removed);
+navigation.header.items = navigation.header.items.filter((item) => item !== removed);
 fs.writeFileSync(navigationPath, `${JSON.stringify(navigation, null, 2)}\n`);
 
-console.log(`\n  Removed "${removed.label}" -> ${removed.url} from the primary navbar.`);
+console.log(`\n  Removed "${removed.label}" -> ${removed.url} from the header navbar.`);
 console.log(`  Updated ${path.relative(ROOT, navigationPath)}`);
 
 if (removed.type !== 'collection') {
@@ -67,7 +67,7 @@ if (removed.type !== 'collection') {
 const name = removed.collection;
 
 const stillReferenced =
-  navigation.primary.some((item) => item.collection === name) ||
+  navigation.header.items.some((item) => item.collection === name) ||
   (navigation.footer || []).some((column) => (column.links || []).some((link) => link.collection === name));
 
 if (stillReferenced) {

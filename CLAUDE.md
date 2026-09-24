@@ -38,9 +38,11 @@ npm run css / npm run css:watch   # compile styles/main.css -> assets/css/main.c
 npm run new <type> "Title"     # scaffold a product, service, page, post or case study
 npm run nav:add -- "Label" "/url/" [--collection=name --limit=n]
 npm run nav:remove -- "Label"
-npm run blog:preview           # generate the next queued post with Claude, print only
-npm run blog:generate          # generate and write it as a draft
-npm run blog:publish           # generate and mark it published
+npm run scaffold                       # create every page listed in scripts/site-tree.md that's missing
+npm run scaffold:preview                # same, print the plan, write nothing
+npm run scaffold:schedule               # run every due job in scripts/scaffold-schedule.md, Claude writes real copy
+npm run scaffold:schedule:preview       # same, print what's due, write and mark nothing
+npm run changelog                       # regenerate CHANGELOG.md from git log
 npm run page:edit -- <page> "<instruction>"        # edit one existing content/template file with Claude, now
 npm run page:edit:preview -- <page> "<instruction>" # same, print only, write nothing
 npm run page:edit                                  # run every queued edit in scripts/page-commands.json
@@ -62,8 +64,10 @@ page; both always run over the whole site.
    `model` with `site`, `data`, `collections`, `nav`, `all` (every page) and
    `byUrl`.
 2. `lib/template.js` is a tiny dependency-free logic-light engine (`{{ value }}`,
-   `{{{ raw }}}`, `{{#if}}`/`{{#unless}}`, `{{#each}}`, `{{> partial}}`). Name
-   lookup walks the whole context stack, so a partial or `{{#each}}` block
+   `{{{ raw }}}`, `{{#if}}`/`{{#unless}}`, `{{#each}}`, `{{> partial}}`,
+   `{{> [value] }}` to include a partial named by a looked-up value instead of a
+   literal — how `content/data/home.json` picks which partial renders each
+   homepage section). Name lookup walks the whole context stack, so a partial or `{{#each}}` block
    reaches `site`/`nav`/`page` without prop drilling. Every
    `templates/partials/*.html` is registered by filename; every
    `templates/layouts/*.html` is registered as `layout:<name>`.
@@ -134,6 +138,7 @@ the search index all update on the next build. Nothing else needs touching.
 | Nav or footer structure | `content/data/navigation.json` |
 | Headline stats | `content/data/company.json` |
 | FAQ entries | `content/data/faq.json` |
+| Homepage sections — which appear, in what order, their copy | `content/data/home.json` (each entry names a `partial` from `templates/partials/`; add a new partial and reference it here to add a new kind of section, no layout edit needed) |
 | Colours, type scale, fonts | `styles/main.css` → `@theme` |
 | A repeated visual pattern | `styles/main.css` → `@layer components` (read the guidelines first) |
 | Page shell, meta tags, schema | `templates/partials/base.html`, `scripts/lib/schema.js` |
@@ -147,17 +152,6 @@ the search index all update on the next build. Nothing else needs touching.
 4. Optionally add a `type: "collection"` entry to `navigation.json`.
 
 No build code changes.
-
-**Write a blog post with Claude**
-
-```bash
-npm run blog:preview          # print it, write nothing
-npm run blog:generate         # write it as a draft
-```
-
-The house style, audience, banned phrases and topic queue live in
-`content/data/blog-queue.json`. Change the writing by changing that file, not
-`scripts/generate-post.js`.
 
 **Edit an existing page with Claude**
 
@@ -181,6 +175,27 @@ to that file by hand any time; `npm run page:edit:list` prints what's pending
 without running anything. A `<page>` argument on the command line always runs
 that one edit immediately and never touches the queue file. Always
 `npm run check` afterwards.
+
+**Scaffold the whole page tree, or schedule pages for later**
+
+`scripts/site-tree.md` is an indented bullet list of every page path the site
+should have, each optionally followed by `— instruction` text for Claude to
+write the body from. `npm run scaffold` walks it and creates whatever markdown
+files are missing (`--force` to also overwrite existing ones, `--file=` to use
+a different tree file); `npm run scaffold:preview` prints the plan without
+writing.
+
+`scripts/scaffold-schedule.md` holds a fenced JSON array of dated one-off
+jobs (`location`, `title`, `date`, `description`, plus optional `content`,
+`images`, `research`) — each one runs once its date arrives, Claude writes the
+real body copy (not a placeholder), and the job is marked `"done": true` so it
+never runs twice. `npm run scaffold:schedule` runs whatever is due;
+`npm run scaffold:schedule:preview` prints it without writing or marking
+anything. Both scaffold commands need `ANTHROPIC_API_KEY`.
+
+Both scaffold commands append to `CHANGELOG.md` afterwards (via
+`scripts/lib/changelog.js`); `npm run changelog` regenerates it from `git log`
+directly. Treat `CHANGELOG.md` as generated — like `dist/`, don't hand-edit it.
 
 ## Frontmatter reference
 

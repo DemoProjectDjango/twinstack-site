@@ -39,7 +39,7 @@ these is true:**
 
 1. The pattern repeats in **three or more templates** (`.btn`, `.card`, `.badge`).
 2. The HTML is **generated from markdown**, so it cannot carry classes
-   (`.prose-twinstack`, `.table-scroll`).
+   (`.prose-site`, `.table-scroll`).
 3. It needs CSS that utilities cannot express — pseudo-elements, `::selection`,
    `<details>` markers, print rules (`.faq summary::after`).
 
@@ -135,7 +135,7 @@ lighter.
 | `.rail` + `.rail-row` | The one elevated element: the lifecycle and at-a-glance panels |
 | `.faq summary` | `<details>` marker, which needs pseudo-elements |
 | `.field-input` | Form inputs, for when a form is added |
-| `.prose-twinstack` + `.prose-wide` | Markdown output |
+| `.prose-site` + `.prose-wide` | Markdown output |
 | `.table-scroll` | Wide markdown tables |
 | `wrap` / `wrap-narrow` / `section-y` | Project utilities (`@utility`, not components) |
 
@@ -150,11 +150,11 @@ Content files produce HTML nobody writes by hand, so it is styled through the
 typography plugin, wrapped once by the layout:
 
 ```html
-<div class="prose-twinstack">{{{ page.content }}}</div>
-<div class="prose-twinstack prose-wide">{{{ page.content }}}</div>   <!-- product/service pages -->
+<div class="prose-site">{{{ page.content }}}</div>
+<div class="prose-site prose-wide">{{{ page.content }}}</div>   <!-- product/service pages -->
 ```
 
-To change how all article text looks, edit the `.prose-twinstack` block in
+To change how all article text looks, edit the `.prose-site` block in
 `styles/main.css`. Do not add `prose-*` modifiers in templates — that is how
 two pages end up with different body copy.
 

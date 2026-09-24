@@ -135,7 +135,7 @@ if (collection && (!Number.isInteger(limit) || limit < 1)) {
 const navigation = readJson(navigationPath);
 
 if (
-  navigation.primary.some(
+  navigation.header.items.some(
     (item) =>
       item.label.toLowerCase() === label.toLowerCase() || item.url.toLowerCase() === normalisedUrl.toLowerCase(),
   )
@@ -167,10 +167,10 @@ if (collection) {
   indexPage = createIndexPage(normalisedUrl, label, listLayout.layoutName);
 }
 
-navigation.primary.push(item);
+navigation.header.items.push(item);
 fs.writeFileSync(navigationPath, `${JSON.stringify(navigation, null, 2)}\n`);
 
-console.log(`\n  Added "${label}" -> ${normalisedUrl} to the primary navbar.`);
+console.log(`\n  Added "${label}" -> ${normalisedUrl} to the header navbar.`);
 console.log(`  Updated ${path.relative(ROOT, navigationPath)}\n`);
 
 if (listLayout) {

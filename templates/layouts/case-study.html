@@ -25,7 +25,7 @@
 
 <section class="section-y">
   <div class="wrap grid items-start gap-18 lg:grid-cols-[minmax(0,1fr)_15rem]">
-    <div class="prose-twinstack">{{{ page.content }}}</div>
+    <div class="prose-site">{{{ page.content }}}</div>
     <aside class="sticky top-24 border-l border-line pl-5 text-[0.9rem] text-muted max-lg:hidden">
       <p class="mb-2.5 font-display font-semibold text-ink">Engagement</p>
       <ul class="grid gap-2">
@@ -35,7 +35,7 @@
         {{# each page.stack }}<li>{{ this }}</li>{{/ each }}
       </ul>
       {{# if page.externalUrl }}
-      <p class="mt-5"><a href="{{ page.externalUrl }}" target="_blank" rel="noopener" class="text-brand hover:text-brand-dark">Salesforce partner PDF</a></p>
+      <p class="mt-5"><a href="{{ page.externalUrl }}" target="_blank" rel="noopener" class="text-brand hover:text-brand-dark">{{# if page.externalLabel }}{{ page.externalLabel }}{{ else }}Read the full write-up{{/ if }}</a></p>
       {{/ if }}
     </aside>
   </div>

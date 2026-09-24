@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { TemplateEngine, escapeHtml } from './lib/template.js';
-import { loadSite, paths, outputPathFor, pick, ROOT } from './lib/content.js';
+import { loadSite, paths, outputPathFor, pick, markActive, ROOT } from './lib/content.js';
 import { renderMarkdown, excerpt } from './lib/markdown.js';
 import { buildJsonLd } from './lib/schema.js';
 import { buildCss } from './lib/css.js';
@@ -43,15 +43,28 @@ function loadTemplates(engine) {
   }
 }
 
-function copyDir(from, to) {
+/** `transform`, when given, is applied to `.html` files instead of a raw byte
+ * copy — used for static/ so its root-relative href/src get the same /dist
+ * dev-mode prefix every templated page already gets via withBase(). Without
+ * it, a static page's own links (or an injected header/footer's) resolve
+ * against the wrong root whenever dist/ is served from within the project
+ * directory rather than at the domain root. */
+function copyDir(from, to, transform) {
   if (!fs.existsSync(from)) return 0;
   fs.mkdirSync(to, { recursive: true });
   let count = 0;
   for (const item of fs.readdirSync(from, { withFileTypes: true })) {
     const src = path.join(from, item.name);
     const dest = path.join(to, item.name);
-    if (item.isDirectory()) count += copyDir(src, dest);
-    else { fs.copyFileSync(src, dest); count++; }
+    if (item.isDirectory()) {
+      count += copyDir(src, dest, transform);
+    } else if (transform && item.name.endsWith('.html')) {
+      fs.writeFileSync(dest, transform(fs.readFileSync(src, 'utf8')));
+      count++;
+    } else {
+      fs.copyFileSync(src, dest);
+      count++;
+    }
   }
   return count;
 }
@@ -60,17 +73,6 @@ function write(file, contents) {
   const target = path.join(paths.dist, file);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, contents);
-}
-
-function markActive(items, currentUrl) {
-  return items.map((item) => {
-    const children = item.children ? markActive(item.children, currentUrl) : [];
-    const active =
-      item.url === currentUrl ||
-      (item.url && item.url !== '/' && currentUrl.startsWith(item.url)) ||
-      children.some((child) => child.active);
-    return { ...item, children, active, ariaCurrent: active ? ' aria-current="page"' : '' };
-  });
 }
 
 /* --------------------------------------------------------------------- build */
@@ -123,7 +125,7 @@ function build() {
     const context = {
       site,
       data,
-      nav: { ...nav, primary: markActive(nav.primary, entry.url) },
+      nav: { ...nav, header: { ...nav.header, items: markActive(nav.header.items, entry.url) } },
       page,
       collections: lists,
       ...lists,
@@ -216,7 +218,7 @@ function build() {
   const css = buildCss({ minify: !includeDrafts });
 
   const assetCount = copyDir(paths.assets, path.join(paths.dist, 'assets'));
-  const staticCount = copyDir(path.join(ROOT, 'static'), paths.dist);
+  const staticCount = copyDir(path.join(ROOT, 'static'), paths.dist, withBase);
 
   /* --------------------------------------------------------------- report */
 

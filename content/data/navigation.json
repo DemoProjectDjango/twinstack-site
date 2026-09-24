@@ -1,5 +1,6 @@
 {
   "_comment": "Edit once, applies to every page. type:'collection' menus rebuild themselves whenever content is added — you never list products or services by hand.",
+<<<<<<< HEAD
   "primary": [
     {
       "label": "Products",
@@ -33,11 +34,41 @@
       "type": "collection",
       "collection": "hello",
       "limit": 8
+=======
+  "header": {
+    "items": [
+      {
+        "label": "Products",
+        "url": "/products.html",
+        "type": "collection",
+        "collection": "products",
+        "limit": 8
+      },
+      {
+        "label": "Services",
+        "url": "/services.html",
+        "type": "collection",
+        "collection": "services",
+        "limit": 8
+      },
+      {
+        "label": "Case studies",
+        "url": "/case-studies.html"
+      },
+      {
+        "label": "Blog",
+        "url": "/blog.html"
+      },
+      {
+        "label": "About",
+        "url": "/about.html"
+      }
+    ],
+    "cta": {
+      "label": "Contact us",
+      "url": "/contact.html"
+>>>>>>> dev
     }
-  ],
-  "cta": {
-    "label": "Contact us",
-    "url": "/contact.html"
   },
   "footer": [
     {

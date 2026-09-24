@@ -51,17 +51,42 @@ export function formatDate(value, locale = 'en-GB') {
   return date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function listMarkdown(dir) {
+/** Every .md file under dir, recursing into subdirectories, as paths relative
+ * to dir with forward slashes (e.g. "who-sees-what/how-to-use.md"). Lets a
+ * collection mirror a nested URL tree as real nested folders on disk. */
+function listMarkdown(dir, base = dir) {
   if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir)
-    .filter((file) => file.endsWith('.md') && !file.startsWith('_'))
-    .sort();
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('_')) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...listMarkdown(full, base));
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      out.push(path.relative(base, full).split(path.sep).join('/'));
+    }
+  }
+  return out.sort();
 }
 
-function applyUrlPattern(pattern, slug) {
+export function applyUrlPattern(pattern, slug) {
   const url = pattern.replace(':slug', slug);
   return url.endsWith('/') || url.endsWith('.html') ? url : `${url}/`;
+}
+
+/** Marks the nav item (and its children) matching `currentUrl` active, for
+ * `aria-current` and highlighting. Shared by the main build and anything else
+ * that renders the header/footer partials outside the normal page pipeline
+ * (e.g. scaffold-schedule.js chroming a standalone static page). */
+export function markActive(items, currentUrl) {
+  return items.map((item) => {
+    const children = item.children ? markActive(item.children, currentUrl) : [];
+    const active =
+      item.url === currentUrl ||
+      (item.url && item.url !== '/' && currentUrl.startsWith(item.url)) ||
+      children.some((child) => child.active);
+    return { ...item, children, active, ariaCurrent: active ? ' aria-current="page"' : '' };
+  });
 }
 
 /** Turn a URL into the file written inside dist/ */
@@ -74,7 +99,12 @@ export function outputPathFor(url) {
 function loadEntry({ file, dir, collection, config, site }) {
   const raw = fs.readFileSync(path.join(dir, file), 'utf8');
   const { data, body } = parseFrontmatter(raw);
-  const slug = data.slug || file.replace(/\.md$/, '').replace(/^\d{4}-\d{2}-\d{2}-/, '');
+  const dirPart = path.dirname(file); // "." for a top-level file
+  const baseSlug = path
+    .basename(file, '.md')
+    .replace(/^\d{4}-\d{2}-\d{2}-/, '');
+  const derivedSlug = dirPart === '.' ? baseSlug : `${dirPart}/${baseSlug}`;
+  const slug = data.slug || derivedSlug;
   const rendered = renderMarkdown(body);
   const url = data.url || applyUrlPattern(config.urlPattern, slug);
 
@@ -143,12 +173,14 @@ function buildNavigation(navConfig, collections, site) {
     }));
 
   return {
-    primary: withActive(expand(navConfig.primary)),
+    header: {
+      items: withActive(expand(navConfig.header?.items || [])),
+      cta: navConfig.header?.cta || null,
+    },
     footer: (navConfig.footer || []).map((column) => ({
       ...column,
       links: withActive(expand(column.links || [])),
     })),
-    utility: withActive(expand(navConfig.utility || [])),
     legal: withActive(expand(navConfig.legal || [])),
   };
 }
@@ -187,7 +219,7 @@ export function loadSite({ includeDrafts = false, includeFuture = false } = {}) 
     collections[name] = entries;
   }
 
-  const nav = buildNavigation(data.navigation || { primary: [] }, collections, site);
+  const nav = buildNavigation(data.navigation || { header: { items: [] } }, collections, site);
 
   const all = Object.values(collections).flat();
   const byUrl = new Map(all.map((entry) => [entry.url, entry]));

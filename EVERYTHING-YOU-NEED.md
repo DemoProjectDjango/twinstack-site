@@ -43,7 +43,6 @@ BreadcrumbList) tuned per page type.
 | FAQ (filtered per page by topic) | `content/data/faq.json` |
 | Testimonials | `content/data/testimonials.json` |
 | Old-URL redirects | `content/data/redirects.json` |
-| Blog topics, house style, banned phrases | `content/data/blog-queue.json` |
 | Colours, fonts, type scale | `styles/main.css` → `@theme` |
 | Buttons, cards, badges, markdown styling | `styles/main.css` → `@layer components` |
 | Meta tags, Open Graph, favicon, fonts | `templates/partials/base.html` |
@@ -64,10 +63,10 @@ Work through this list. Items marked **required** block go-live.
 
 | # | Item | Where it goes | Notes |
 | --- | --- | --- | --- |
-| 1 | **Anthropic API key** (required for automation) | GitHub repo secret named `ANTHROPIC_API_KEY`, and `.env` locally | Create at console.anthropic.com. Only the blog generator uses it. |
+| 1 | **Anthropic API key** (required for scheduled/AI-assisted content) | GitHub repo secret named `ANTHROPIC_API_KEY`, and `.env` locally | Create at console.anthropic.com. Used by `npm run scaffold:schedule` and `npm run page:edit`. |
 | 2 | **GitHub repository** (required) | Push this folder to it | Private or public both work. |
-| 3 | **Hosting** (required) | GitHub Pages workflow is included; Cloudflare Pages and Netlify instructions in §7 | |
-| 4 | **DNS control for twinstack.net** (required) | See §7 | You are moving an existing live site, so plan the cutover. |
+| 3 | **Hosting** (required) | GitHub Pages workflow is included; Cloudflare Pages and Netlify instructions in §6 | |
+| 4 | **DNS control for twinstack.net** (required) | See §6 | You are moving an existing live site, so plan the cutover. |
 | 5 | Analytics account | Add the snippet to `templates/partials/base.html` | Plausible or Fathom keep the site cookie-free, which matches the privacy page as written. |
 | 6 | Form endpoint | `templates/layouts/contact.html` | Currently email/WhatsApp/booking links only — no form. Add Formspree, Basin or a Salesforce Web-to-Lead endpoint if you want a form. |
 
@@ -89,9 +88,6 @@ Work through this list. Items marked **required** block go-live.
 - **British spelling** throughout, matching the tone of your product pages.
 - **Free 30-minute call** as the primary call to action on every page, with email
   and WhatsApp secondary.
-- **Blog cadence: Tuesdays 07:00 UTC**, posted as a **pull request for review**
-  rather than published directly. Change in `site.config.json` → `automation`
-  and `.github/workflows/weekly-blog.yml`.
 - **Five services**, inferred from your homepage sections. Rename or merge freely.
 - Case study PDFs still point at the Salesforce partner file downloads you use today.
 
@@ -118,14 +114,10 @@ git push -u origin main
 
 # 5. In GitHub: Settings → Pages → Source: GitHub Actions.
 #    Settings → Secrets and variables → Actions → New secret:
-#       ANTHROPIC_API_KEY = sk-ant-...
-
-# 6. Test the writer before trusting the schedule.
-export ANTHROPIC_API_KEY=sk-ant-...
-npm run blog:preview        # prints a post, writes nothing
+#       ANTHROPIC_API_KEY = sk-ant-... (only needed for scaffold:schedule / page:edit)
 ```
 
-Then point DNS (§7) once you are happy with the preview deployment.
+Then point DNS (§6) once you are happy with the preview deployment.
 
 ---
 
@@ -155,7 +147,7 @@ and future-dated posts are visible in `npm run dev` and excluded from
 | You want to | Edit |
 | --- | --- |
 | Change the phone number or email | `site.config.json` → `contact` |
-| Add a navbar item | `content/data/navigation.json` → `primary` |
+| Add a navbar item | `content/data/navigation.json` → `header.items` |
 | Reorder the footer | `content/data/navigation.json` → `footer` |
 | Update the stats strip | `content/data/company.json` → `stats` |
 | Add an FAQ everywhere it is relevant | `content/data/faq.json`, give it a `topic` |
@@ -173,7 +165,7 @@ Add to `content/data/redirects.json`:
 ```
 
 Written to `dist/_redirects` on build (Netlify and Cloudflare Pages read this
-natively; see §7 for GitHub Pages).
+natively; see §6 for GitHub Pages).
 
 ### Content that repeats across pages
 
@@ -191,81 +183,7 @@ That is how you avoid the same paragraph drifting out of sync across ten pages.
 
 ---
 
-## 5. The weekly blog automation
-
-### How it runs
-
-```
-Tuesday 07:00 UTC
-  → GitHub Action starts
-  → scripts/generate-post.js reads content/data/blog-queue.json
-  → takes the first topic with status "queued"
-  → builds a prompt containing: your house voice, the audience, the banned
-    phrases, every product and service URL it is allowed to link to, and the
-    titles of recent posts so it does not repeat itself
-  → calls the Claude API
-  → validates the result
-  → writes content/blog/YYYY-MM-DD-slug.md with draft: true
-  → marks the topic "published" in the queue
-  → builds the site and runs the link checker
-  → opens a pull request with a review checklist
-You merge and remove draft: true → the post goes live on the next deploy.
-```
-
-### What validation rejects or fixes automatically
-
-- Missing title or description → rejected, no file written
-- Post under ~540 words → rejected
-- A link to a page that does not exist → the link is stripped, the text stays,
-  and a warning is printed
-- Banned marketing phrases → flagged in the run log
-- An H1 in the body → flagged (the layout renders the title already)
-
-### Controlling what gets written
-
-Everything about the writing lives in `content/data/blog-queue.json`, not in
-code:
-
-- `defaults.voice` — the house voice
-- `defaults.audience` — who it is written for
-- `defaults.mustInclude` — non-negotiables per post
-- `topics[]` — the queue, each with `title`, `angle`, `category`, `tags` and
-  `linkTo`
-
-Keep four or more topics queued. A monthly Action opens an issue when the queue
-drops below four.
-
-### Manual control
-
-```bash
-npm run blog:preview                                   # print, write nothing
-npm run blog:generate                                  # next queued topic, as a draft
-npm run blog:generate -- --topic="Winter release notes"
-npm run blog:generate -- --research                    # let Claude web-search first
-npm run blog:publish                                   # skip the draft flag
-```
-
-From GitHub: Actions → Weekly blog post → Run workflow, with optional topic,
-research and publish inputs.
-
-### Cost
-
-One post is roughly 3–5k input tokens and 1.5–2.5k output tokens. At current
-Sonnet pricing that is a few cents per post — order of a couple of dollars a
-year for a weekly cadence. Check console.anthropic.com for current rates before
-budgeting; `--research` costs more because web search adds tokens.
-
-### Keep a human in the loop
-
-`requireReview: true` in `site.config.json` is the default and should stay that
-way. The model does not know what happened on your engagements last month, and
-an incorrect claim about Salesforce behaviour published under your name costs
-more than five minutes of review. The PR checklist asks specifically about
-invented statistics, because that is the failure mode that matters.
-
----
-
-## 6. Architecture
+## 5. Architecture
 
 ### Build pipeline
 
@@ -296,7 +214,6 @@ templates render because Tailwind reads class names out of them.
 | `scripts/dev.js` | Preview server on :4321, rebuilds on change, serves clean URLs. |
 | `scripts/check.js` | Broken internal links, duplicate URLs, missing alt text, SEO field lengths. Exits non-zero on errors. |
 | `scripts/new.js` | Scaffolds content with the correct frontmatter. |
-| `scripts/generate-post.js` | The Claude writer and its validation. |
 | `scripts/lib/template.js` | The template engine: `{{ }}`, `{{{ }}}`, `{{#if}}`, `{{#each}}`, `{{> partial}}`. |
 | `scripts/lib/markdown.js` | Markdown and frontmatter parsing. |
 | `scripts/lib/content.js` | Collection loading, URL rules, navigation expansion. |
@@ -312,10 +229,15 @@ templates render because Tailwind reads class names out of them.
 {{# unless x }} … {{/ unless }}
 {{# each list }} {{ this }} {{ @padded }} {{ @index }} {{ @first }} {{/ each }}
 {{> partial-name }}             templates/partials/partial-name.html
+{{> [value] }}                  include the partial NAMED by the looked-up value
 ```
 
 Names resolve up the whole context stack, so a partial always reaches `site`,
-`nav`, `page` and every collection.
+`nav`, `page` and every collection. The dynamic form is how the homepage
+picks its sections: `content/data/home.json` lists `{ "partial": "...", ... }`
+entries and `templates/layouts/home.html` does
+`{{# each data.home.sections }}{{> [partial] }}{{/ each }}` — reorder, remove
+or add a homepage section by editing that JSON file, no template edit needed.
 
 ### Adding a new content type
 
@@ -345,7 +267,7 @@ around.
 
 ---
 
-## 7. Deployment
+## 6. Deployment
 
 ### GitHub Pages (workflow included)
 
@@ -396,7 +318,7 @@ and `/products/google-form-auto-sync/` keep their existing paths;
 
 ---
 
-## 8. Scaling to 100+ pages
+## 7. Scaling to 100+ pages
 
 Nothing structural changes. What follows is what you will want to add as volume
 grows, in the order you will want it.
@@ -440,7 +362,7 @@ grows, in the order you will want it.
 
 ---
 
-## 9. Troubleshooting
+## 8. Troubleshooting
 
 | Symptom | Cause and fix |
 | --- | --- |
@@ -452,19 +374,14 @@ grows, in the order you will want it.
 | `Tailwind CLI not found` | `npm install` has not been run in this checkout. CI runs `npm ci`. |
 | A new class does nothing | The CSS was built before the template change, or the file is outside the scanned sources in `styles/main.css`. Rebuild. |
 | A style disappears after deploy | It was added by hand to `assets/css/main.css`, which is generated. Put it in `styles/main.css`. |
-| Blog Action fails with 401 | `ANTHROPIC_API_KEY` secret is missing or expired. |
-| Blog Action exits with code 2 | The queue is empty. Add topics with `"status": "queued"`. |
-| Generated post rejected | Too short or missing frontmatter. The run log names the reason; rerun the workflow. |
+| `scaffold:schedule` or `page:edit` fails with 401 | `ANTHROPIC_API_KEY` is missing or expired. |
 
 ---
 
-## 10. Open questions for you
+## 9. Open questions for you
 
 1. Are the stats in `content/data/company.json` accurate?
 2. Do you want a contact form, or are email, WhatsApp and the booking link enough?
 3. Should Saiful's profile page (`/saiful-islam.html` today) become a content
    type, a page, or a section of About?
 4. GitHub Pages or Cloudflare Pages? It affects how redirects are handled.
-5. Weekly on Tuesdays — right cadence, right day?
-6. Do you want posts auto-published after validation, or always through review?
-   Review is the current default and the safer one.

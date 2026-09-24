@@ -175,7 +175,7 @@
 /* Markdown bodies produce HTML we do not write by hand, so the typography
    plugin styles it. Tuned to the brand rather than left at defaults. */
 @layer components {
-  .prose-twinstack {
+  .prose-site {
     @apply prose prose-slate max-w-[1280px]
            prose-headings:font-display prose-headings:tracking-tight prose-headings:text-ink
            prose-h2:mt-12 prose-h2:text-h3
@@ -195,8 +195,8 @@
            prose-td:align-top prose-img:rounded;
   }
   /* The typography plugin adds quotes around inline code; we do not want them. */
-  .prose-twinstack :where(code):not(:where([class~="not-prose"] *))::before,
-  .prose-twinstack :where(code):not(:where([class~="not-prose"] *))::after {
+  .prose-site :where(code):not(:where([class~="not-prose"] *))::before,
+  .prose-site :where(code):not(:where([class~="not-prose"] *))::after {
     content: none;
   }
   .prose-wide { @apply max-w-[1280px]; }
