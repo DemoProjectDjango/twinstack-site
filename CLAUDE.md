@@ -168,6 +168,16 @@ available to that file (see `scripts/edit-page.js` for the full list —
 refuses to write if the result looks truncated, drops a required frontmatter
 field, or has unbalanced `{{#if}}`/`{{#each}}` blocks.
 
+Pass `--image=<path|url>` (repeatable) to give Claude images to look at and
+place in the page. A path is a file in the repo, such as
+`assets/img/uploads/team.jpg`, which the page references as
+`/assets/img/uploads/team.jpg`. A URL is used as-is. Both are sent as vision
+input through `resolveImages()` in `scripts/lib/claude-writer.js`, and queue
+entries accept an `images` list. With `--dry-run`,
+`--proposal-out=<file>` also saves the complete proposed file as JSON. The
+Twinstack web app uses it to show the preview and then write exactly that
+version. `ANTHROPIC_BASE_URL` overrides the API host for a proxy or a mock.
+
 Run with no `<page>` argument and it works through the queue in
 `scripts/page-commands.json` instead — a list of `{ file, instruction }` jobs,
 applied in order, each one removed from the queue once it's written. Add jobs

@@ -12,6 +12,16 @@
  *   node scripts/edit-page.js --dry-run                same, print only
  *   node scripts/edit-page.js --list                    show the queue, run nothing
  *
+ * Options for a single edit:
+ *   --image=<path|url>       an image Claude should see and may place in the
+ *                            page; repeat for several. A path is a file in this
+ *                            repo (e.g. assets/img/uploads/team.jpg, shown on
+ *                            the site as /assets/img/uploads/team.jpg), a URL
+ *                            is used as-is. Queue entries take an "images" list.
+ *   --proposal-out=<file>    with --dry-run: also save the proposed file as JSON
+ *                            ({ file, content, problems, … }) at this path, so a
+ *                            tool can show it and then write exactly that version.
+ *
  * <page> is a content slug (e.g. "products"), a URL, or a file path under
  * content/ or templates/.
  *
@@ -28,8 +38,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, readJson, loadSite } from './lib/content.js';
 import { parseFrontmatter } from './lib/markdown.js';
+import { resolveImages } from './lib/claude-writer.js';
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
+// ANTHROPIC_BASE_URL (the SDKs' variable) points at a proxy or a local mock.
+const API_URL = `${(process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/+$/, '')}/v1/messages`;
 const COMMANDS_PATH = path.join(ROOT, 'scripts/page-commands.json');
 const DEFAULT_QUEUE_COMMENT = 'Queue of pending edits for `npm run page:edit` (no arguments). Each entry is one job: { file, instruction }. Running with no arguments processes every entry in order, writes each one, then removes it from this queue. Add entries by hand any time; running `npm run page:edit -- <page> "<instruction>"` with arguments applies that edit immediately instead and never touches this file.';
 const EDITABLE_ROOTS = ['content', 'templates', 'styles/main.css', 'site.config.json'];
@@ -42,6 +54,8 @@ const flag = (name) => {
 };
 const positional = argv.filter((a) => !a.startsWith('--'));
 const dryRun = Boolean(flag('dry-run'));
+const imageArgs = argv.filter((a) => a.startsWith('--image=')).map((a) => a.slice('--image='.length));
+const proposalOut = flag('proposal-out');
 
 const site = readJson(path.join(ROOT, 'site.config.json'));
 const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -101,7 +115,7 @@ function isEditable(relPath) {
 
 /* ----------------------------------------------------------------- prompt */
 
-function buildPrompts(relFile, instruction, original) {
+function buildPrompts(relFile, instruction, original, images = []) {
   const isContent = relFile.startsWith('content/') && relFile.endsWith('.md');
 
   const contextNote = isContent
@@ -156,9 +170,32 @@ Return only the raw contents of the new file, starting from its very first chara
 ${original}
 ----- end current contents -----
 
-Instruction: ${instruction}`;
+Instruction: ${instruction}${imagesNote(images)}`;
 
   return { systemPrompt, userPrompt, isContent };
+}
+
+/** The part of the prompt that tells Claude how to use the supplied images. */
+function imagesNote(images) {
+  if (!images.length) return '';
+  const list = images
+    .map((image, i) => `  ${i + 1}. ${image.ref}${image.block ? '' : ' (not shown to you: unsupported type or too large)'}`)
+    .join('\n');
+  return `
+
+Images supplied with this instruction (the ones you can see are attached above, in the same order):
+${list}
+Use them where the instruction asks. Reference each one with exactly the path or URL listed, e.g. ![Alt text](${images[0].ref}). Write alt text that describes what the image actually shows. Never invent other image paths.`;
+}
+
+/** Text-only prompts stay a string; with images, each one is labelled and sent as vision input. */
+function userContent(userPrompt, images) {
+  if (!images.length) return userPrompt;
+  const blocks = [];
+  images.forEach((image, i) => {
+    if (image.block) blocks.push({ type: 'text', text: `Image ${i + 1}: ${image.ref}` }, image.block);
+  });
+  return [...blocks, { type: 'text', text: userPrompt }];
 }
 
 async function callClaude(systemPrompt, userPrompt) {
@@ -219,9 +256,13 @@ function sanityCheck(original, updated, isContent) {
 
 /* ------------------------------------------------------------- one edit --- */
 
-async function applyEdit(relFile, instruction) {
+async function applyEdit(relFile, instruction, imageEntries = []) {
   console.log(`  File: ${relFile}`);
   console.log(`  Instruction: ${instruction}`);
+  const images = resolveImages(imageEntries);
+  for (const [i, image] of images.entries()) {
+    console.log(`  Image ${i + 1}: ${image.ref}${image.block ? '' : ' (reference only)'}`);
+  }
 
   if (!isEditable(relFile)) {
     console.error(`  Won't touch "${relFile}" — outside content/, templates/, styles/main.css and site.config.json (dist/ and assets/css/main.css are generated, never edit them directly).\n`);
@@ -235,7 +276,7 @@ async function applyEdit(relFile, instruction) {
   }
 
   const original = fs.readFileSync(targetPath, 'utf8');
-  const { systemPrompt, userPrompt, isContent } = buildPrompts(relFile, instruction, original);
+  const { systemPrompt, userPrompt, isContent } = buildPrompts(relFile, instruction, original, images);
 
   if (!apiKey) {
     console.log(`----- system prompt -----\n${systemPrompt}\n\n----- user prompt -----\n${userPrompt}\n`);
@@ -244,13 +285,14 @@ async function applyEdit(relFile, instruction) {
   }
 
   console.log(`  Model: ${site.automation.model}\n`);
-  const raw = stripFence(await callClaude(systemPrompt, userPrompt));
+  const raw = stripFence(await callClaude(systemPrompt, userContent(userPrompt, images)));
   const problems = sanityCheck(original, raw, isContent);
 
   if (dryRun) {
     console.log(`----- proposed ${relFile} (not written) -----\n`);
     console.log(raw);
     if (problems.length) console.log(`\n  warning: ${problems.join('\n  warning: ')}`);
+    if (proposalOut) writeProposal({ relFile, instruction, images, raw, problems });
     return false;
   }
 
@@ -264,6 +306,27 @@ async function applyEdit(relFile, instruction) {
   return true;
 }
 
+/** Saves a dry-run's proposed file for tools that show it and then write exactly that version. */
+function writeProposal({ relFile, instruction, images, raw, problems }) {
+  const target = path.resolve(ROOT, String(proposalOut));
+  if (!target.startsWith(ROOT + path.sep)) {
+    console.error(`  --proposal-out must be inside the repository, not ${proposalOut}.`);
+    return;
+  }
+  const proposal = {
+    file: relFile,
+    instruction,
+    images: images.map((image) => image.ref),
+    content: raw.endsWith('\n') ? raw : `${raw}\n`,
+    problems,
+    model: site.automation.model,
+    createdAt: new Date().toISOString(),
+  };
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, `${JSON.stringify(proposal, null, 2)}\n`);
+  console.log(`\n  Saved the proposal to ${path.relative(ROOT, target).replace(/\\/g, '/')}`);
+}
+
 /* -------------------------------------------------------------------- run */
 
 async function runAdHoc(pageArg, instruction) {
@@ -273,7 +336,7 @@ async function runAdHoc(pageArg, instruction) {
     process.exit(1);
   }
 
-  const ok = await applyEdit(relFile, instruction);
+  const ok = await applyEdit(relFile, instruction, imageArgs);
   if (!dryRun) {
     console.log(ok ? `  Review with: git diff -- ${relFile}\n  Validate with: npm run check\n` : '');
     process.exit(ok ? 0 : 3);
@@ -301,7 +364,7 @@ async function runQueue() {
 
   for (const job of queue) {
     console.log('  ----------------------------------------');
-    const ok = await applyEdit(job.file, job.instruction);
+    const ok = await applyEdit(job.file, job.instruction, Array.isArray(job.images) ? job.images : []);
 
     if (dryRun) {
       remaining.shift();

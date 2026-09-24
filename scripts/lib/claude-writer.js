@@ -9,7 +9,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './content.js';
 
-export const API_URL = 'https://api.anthropic.com/v1/messages';
+// ANTHROPIC_BASE_URL (the SDKs' variable) points at a proxy or a local mock.
+export const API_URL = `${(process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/+$/, '')}/v1/messages`;
 
 const MEDIA_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
