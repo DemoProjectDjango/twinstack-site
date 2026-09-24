@@ -26,6 +26,13 @@
     {
       "label": "About",
       "url": "/about.html"
+    },
+    {
+      "label": "Hello",
+      "url": "/hello",
+      "type": "collection",
+      "collection": "hello",
+      "limit": 8
     }
   ],
   "cta": {

@@ -72,6 +72,16 @@
         "label": "Case studies",
         "url": "/case-studies.html"
       }
+    },
+    "hello": {
+      "dir": "content/hello",
+      "urlPattern": "/hello/:slug.html",
+      "layout": "hello",
+      "sort": "order",
+      "index": {
+        "label": "Hello",
+        "url": "/hello"
+      }
     }
   },
   "deploy": {
